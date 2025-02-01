@@ -2,9 +2,7 @@ package net.asian.civiliansmod.gui;
 
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.util.NPCUtil;
-import net.minecraft.util.Identifier;
 
-import java.util.List;
 
 /**
  * Class to display default npc models

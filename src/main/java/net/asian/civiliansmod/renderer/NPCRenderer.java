@@ -2,7 +2,6 @@ package net.asian.civiliansmod.renderer;
 
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.model.NPCModel;
-import net.asian.civiliansmod.util.NPCUtil;
 import net.minecraft.client.render.entity.MobEntityRenderer;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.model.EntityModelLayer;

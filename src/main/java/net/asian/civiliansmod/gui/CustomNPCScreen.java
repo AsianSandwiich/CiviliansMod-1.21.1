@@ -6,7 +6,6 @@ import net.asian.civiliansmod.gui.widgets.ImageButtonWidget;
 import net.asian.civiliansmod.util.NPCUtil;
 import net.minecraft.util.Identifier;
 
-import java.util.List;
 
 /**
  * Class to display custom models choose by the player
