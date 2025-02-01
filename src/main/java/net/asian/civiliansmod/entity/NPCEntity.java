@@ -46,37 +46,33 @@ public class NPCEntity extends PathAwareEntity {
     public NPCEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
 
-        if (!this.getWorld().isClient) {
+        // Assign default model and slim model names to the entity
+        String[] defaultModelNames = {"Charles", "Cade", "Henry", "Liam", "Rodney", "Nathaniel", "Elliot", "Julian", "Malcolm", "Tobias",
+                "Wesley", "Felix", "Desmond", "Simon", "Miles", "Everett", "Dorian", "Quentin", "Cedric", "Adrian", "Roman", "Marcus", "Gideon", "Levi", "Jasper"};
+        String[] slimModelNames = {"Evelyn", "Sarah", "Olivia", "Emma", "Alexia", "Amelia", "Celeste", "Lillian", "Joleen", "Rosalie",
+                "Clara", "Vivienne", "Elena", "Margot", "Nora", "Daphne", "Fiona", "Genevieve", "Juliette", "Lucille", "Naomi", "Ivy", "Serena", "Vera", "Adelaide"};
 
-            int variant = this.random.nextInt(88);
-            this.setVariant(variant);
-
-            // Assign default model and slim model names to the entity
-            String[] defaultModelNames = {"Charles", "Cade", "Henry", "Liam", "Rodney", "Nathaniel", "Elliot", "Julian", "Malcolm", "Tobias",
-                    "Wesley", "Felix", "Desmond", "Simon", "Miles", "Everett", "Dorian", "Quentin", "Cedric", "Adrian", "Roman", "Marcus", "Gideon", "Levi", "Jasper"};
-            String[] slimModelNames = {"Evelyn", "Sarah", "Olivia", "Emma", "Alexia", "Amelia", "Celeste", "Lillian", "Joleen", "Rosalie",
-                    "Clara", "Vivienne", "Elena", "Margot", "Nora", "Daphne", "Fiona", "Genevieve", "Juliette", "Lucille", "Naomi", "Ivy", "Serena", "Vera", "Adelaide"};
-
-            if (variant >= 0 && variant <= 43) {  // Default models: Variants 0, 1, 2
-                String randomName = defaultModelNames[this.random.nextInt(defaultModelNames.length)];
-                this.setCustomName(Text.literal(randomName));
-                System.out.println("Assigned 'default' name: " + randomName + " to variant: " + variant);
-            } else if (variant >= 44 && variant <= 87) {  // Slim models: Variants 3, 4, 5
-                String randomName = slimModelNames[this.random.nextInt(slimModelNames.length)];
-                this.setCustomName(Text.literal(randomName));
-                System.out.println("Assigned 'slim' name: " + randomName + " to variant: " + variant);
-            }
-
-            this.setCustomNameVisible(true);  // Ensure name is visible
+        if (this.getVariant() >= 0 && this.getVariant() <= 43) {
+            String randomName = defaultModelNames[this.random.nextInt(defaultModelNames.length)];
+            this.setCustomName(Text.literal(randomName));
+            System.out.println("Assigned 'default' name: " + randomName + " to variant: " + this.getVariant());
+        } else {
+            String randomName = slimModelNames[this.random.nextInt(slimModelNames.length)];
+            this.setCustomName(Text.literal(randomName));
+            System.out.println("Assigned 'slim' name: " + randomName + " to variant: " + this.getVariant());
         }
+
+        this.setCustomNameVisible(true);
+
     }
 
 
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
         super.initDataTracker(builder);
-        builder.add(VARIANT, 0);
-        builder.add(SLIM, false);
+        int variant = this.random.nextInt(88);
+        builder.add(VARIANT, variant);
+        builder.add(SLIM, NPCUtil.isSlim(variant));
         builder.add(IS_PAUSED, false);
         builder.add(IS_FOLLOWING, false);
     }
@@ -319,11 +315,11 @@ public class NPCEntity extends PathAwareEntity {
 
     @Environment(EnvType.CLIENT)
     private void openCustomNPCScreen() {
-        if(NPCUtil.hasDefaultSkin(this.getVariant())){
+        if (NPCUtil.hasDefaultSkin(this.getVariant())) {
             MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this));
         } else if (NPCUtil.hasSlimSkin(this.getVariant())) {
             MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this));
-        }else {
+        } else {
             MinecraftClient.getInstance().setScreen(new CustomNPCScreen(this));
         }
     }
