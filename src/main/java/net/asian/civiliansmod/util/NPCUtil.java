@@ -1,6 +1,8 @@
 package net.asian.civiliansmod.util;
 
 import net.asian.civiliansmod.CiviliansMod;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
@@ -16,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+@Environment(EnvType.CLIENT)
 public class NPCUtil {
     /**
      * list of all npc textures

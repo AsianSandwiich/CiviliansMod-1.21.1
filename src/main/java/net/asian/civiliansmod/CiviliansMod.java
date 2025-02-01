@@ -3,7 +3,6 @@ package net.asian.civiliansmod;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.networking.CustomC2SNetworking;
 import net.asian.civiliansmod.networking.NetworkPayloads;
-import net.asian.civiliansmod.util.NPCUtil;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.entity.EntityType;
@@ -43,6 +42,7 @@ public class CiviliansMod implements ModInitializer {
         NetworkPayloads.intialize();
 
         CustomC2SNetworking.intialize();
+
 
 
 
