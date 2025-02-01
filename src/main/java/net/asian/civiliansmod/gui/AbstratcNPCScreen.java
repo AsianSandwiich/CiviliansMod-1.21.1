@@ -66,18 +66,6 @@ public abstract class AbstratcNPCScreen extends Screen {
         this.defaultSkin = defaultSkin;
     }
 
-    /**
-     * Method used to get the start and end indexes of the displayed skins. Ex:
-     * <pre>
-     * {@code
-     * startIndex = 10, endIndex = 15;
-     * ->
-     * displayed Skins : NPCUtil.getSkins(10, 15);
-     * }
-     * </pre>
-     *
-     * @return
-     */
     protected abstract int[] getStartAndEndIndexes();
 
 
@@ -157,7 +145,7 @@ public abstract class AbstratcNPCScreen extends Screen {
         }
     }
 
-    protected void renitIndexes(){
+    protected void renitIndexes() {
         indexes = getStartAndEndIndexes();
     }
 
@@ -184,10 +172,10 @@ public abstract class AbstratcNPCScreen extends Screen {
         ).dimensions(containerX + 161, containerY + 22, 39, 12).build());
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Save"), button -> {
-            npc.setSlim(NPCUtil.isSlim(this.selectedVariant));
+            if (this.selectedVariant != -1)
+                npc.setSlim(NPCUtil.isSlim(this.selectedVariant));
             save = true;
             this.close();
-            npc.setVariant(this.selectedVariant);
             scrollOffset = 0;
             updateScrollBarDimensions();
         }).dimensions(containerX + 11, containerY + 136, 50, 14).build());

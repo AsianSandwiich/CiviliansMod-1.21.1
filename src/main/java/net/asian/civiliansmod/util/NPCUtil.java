@@ -30,20 +30,6 @@ public class NPCUtil {
      */
     static int[] indexes;
 
-    public static List<Identifier> getSkins(int start, int end) {
-        if (start < 0 || end >= skins.size()) {
-            throw new IndexOutOfBoundsException("skin request index out of bounds: startIndex " + start + ", endIndex: " + end + ". expected values: between 0 and " + (skins.size() - 1));
-        }
-        if (start > end) {
-            throw new IllegalStateException("start Index cannot be bigger than end Index, startIndex" + start + ", endIndex" + end);
-        }
-        List<Identifier> newList = new ArrayList<>();
-        for (int i = start; i < end; i++) {
-            newList.add(skins.get(i));
-        }
-        return newList;
-    }
-
     public static boolean isSlim(int index) {
         if (index <= indexes[1])
             return false;
@@ -72,26 +58,9 @@ public class NPCUtil {
         return index > indexes[1] && index <= indexes[2];
     }
 
-    public static boolean hasDefaultCustomSkin(int index) {
-        return index > indexes[2] && index <= indexes[3];
-    }
-
-    public static boolean hasSlimCustomSkin(int index) {
-        return index > indexes[3];
-    }
-
     public static int[] getSlimCustomSkinIndexes() {
         return new int[]{indexes[3] + 1, indexes[4]};
     }
-
-    public static int getSkinSize() {
-        return skins.size();
-    }
-
-    public static int[] getIndexes() {
-        return indexes;
-    }
-
 
     public static List<Identifier> getDefaultSkins() {
         List<Identifier> skins = new ArrayList<>();
@@ -131,14 +100,6 @@ public class NPCUtil {
         return null;
     }
 
-    /**
-     * Method to get the texture of a NPC based of the index.
-     * In the case where the index is out of bound(can happend when a custom texture applied to the npc is deleted),
-     * a custom texture is applied
-     *
-     * @param texture the index of the texture
-     * @return the Identifier related to the index
-     */
     public static Identifier getNPCTexture(int texture) {
         if (texture > skins.size() - 1) {
             texture = Random.create().nextInt(skins.size() - 1);

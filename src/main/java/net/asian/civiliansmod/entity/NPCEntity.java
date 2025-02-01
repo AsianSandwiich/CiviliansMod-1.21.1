@@ -41,11 +41,11 @@ public class NPCEntity extends PathAwareEntity {
     private static final TrackedData<Boolean> IS_PAUSED = DataTracker.registerData(NPCEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private int regenerationCooldown = 0;
     private static final TrackedData<Boolean> IS_FOLLOWING = DataTracker.registerData(NPCEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    boolean bl = true;
 
 
     public NPCEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
-
         if (!this.getWorld().isClient) {
             // Assign default model and slim model names to the entity
             String[] defaultModelNames = {"Charles", "Cade", "Henry", "Liam", "Rodney", "Nathaniel", "Elliot", "Julian", "Malcolm", "Tobias",
@@ -53,7 +53,6 @@ public class NPCEntity extends PathAwareEntity {
             String[] slimModelNames = {"Evelyn", "Sarah", "Olivia", "Emma", "Alexia", "Amelia", "Celeste", "Lillian", "Joleen", "Rosalie",
                     "Clara", "Vivienne", "Elena", "Margot", "Nora", "Daphne", "Fiona", "Genevieve", "Juliette", "Lucille", "Naomi", "Ivy", "Serena", "Vera", "Adelaide"};
 
-            System.out.println(this.getVariant());
 
             int variant = this.random.nextInt(88);
             this.setVariant(variant);
@@ -176,10 +175,6 @@ public class NPCEntity extends PathAwareEntity {
 
     @Override
     public boolean damage(DamageSource source, float amount) {
-        if (isPaused()) {
-            return false; // Disallow damage and stop further logic if in "Stay" mode
-        }
-
         boolean hurt = super.damage(source, amount);
 
         if (hurt && source.getAttacker() != null) {
@@ -340,6 +335,16 @@ public class NPCEntity extends PathAwareEntity {
     public boolean canBeLeashedBy(PlayerEntity player) {
         // Allow leashing only if the player is in survival or adventure mode
         return !this.isLeashed() && !player.isSneaking();
+    }
+
+    @Override
+    public void tick() {
+        if(bl){
+            this.setSlim(NPCUtil.isSlim(this.getVariant()));
+            bl = false;
+        }
+        super.tick();
+
     }
 
     @Override

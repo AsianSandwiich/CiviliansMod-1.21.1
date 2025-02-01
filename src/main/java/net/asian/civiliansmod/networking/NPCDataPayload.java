@@ -42,6 +42,6 @@ public record NPCDataPayload(UUID entityUuid, String customName, int variant, bo
         entity.setVariant(this.variant);
         entity.setCustomName(Text.of(this.customName));
         entity.setPaused(this.isPaused); // Update the entity's paused state
-        entity.setFollowing(this.isFollowing); // Update the entity's follow state
+        entity.setFollowing(this.isFollowing);
     }
 }
