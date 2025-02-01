@@ -10,8 +10,6 @@ import net.asian.civiliansmod.model.NPCModel;
 import net.minecraft.client.render.entity.model.EntityModelLayer;
 import net.minecraft.util.Identifier;
 
-import java.util.Arrays;
-
 public class CiviliansModClient implements ClientModInitializer {
 
 

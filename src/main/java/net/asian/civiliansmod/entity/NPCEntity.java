@@ -46,23 +46,31 @@ public class NPCEntity extends PathAwareEntity {
     public NPCEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
 
-        // Assign default model and slim model names to the entity
-        String[] defaultModelNames = {"Charles", "Cade", "Henry", "Liam", "Rodney", "Nathaniel", "Elliot", "Julian", "Malcolm", "Tobias",
-                "Wesley", "Felix", "Desmond", "Simon", "Miles", "Everett", "Dorian", "Quentin", "Cedric", "Adrian", "Roman", "Marcus", "Gideon", "Levi", "Jasper"};
-        String[] slimModelNames = {"Evelyn", "Sarah", "Olivia", "Emma", "Alexia", "Amelia", "Celeste", "Lillian", "Joleen", "Rosalie",
-                "Clara", "Vivienne", "Elena", "Margot", "Nora", "Daphne", "Fiona", "Genevieve", "Juliette", "Lucille", "Naomi", "Ivy", "Serena", "Vera", "Adelaide"};
+        if (!this.getWorld().isClient) {
+            // Assign default model and slim model names to the entity
+            String[] defaultModelNames = {"Charles", "Cade", "Henry", "Liam", "Rodney", "Nathaniel", "Elliot", "Julian", "Malcolm", "Tobias",
+                    "Wesley", "Felix", "Desmond", "Simon", "Miles", "Everett", "Dorian", "Quentin", "Cedric", "Adrian", "Roman", "Marcus", "Gideon", "Levi", "Jasper"};
+            String[] slimModelNames = {"Evelyn", "Sarah", "Olivia", "Emma", "Alexia", "Amelia", "Celeste", "Lillian", "Joleen", "Rosalie",
+                    "Clara", "Vivienne", "Elena", "Margot", "Nora", "Daphne", "Fiona", "Genevieve", "Juliette", "Lucille", "Naomi", "Ivy", "Serena", "Vera", "Adelaide"};
 
-        if (this.getVariant() >= 0 && this.getVariant() <= 43) {
-            String randomName = defaultModelNames[this.random.nextInt(defaultModelNames.length)];
-            this.setCustomName(Text.literal(randomName));
-            System.out.println("Assigned 'default' name: " + randomName + " to variant: " + this.getVariant());
-        } else {
-            String randomName = slimModelNames[this.random.nextInt(slimModelNames.length)];
-            this.setCustomName(Text.literal(randomName));
-            System.out.println("Assigned 'slim' name: " + randomName + " to variant: " + this.getVariant());
+            System.out.println(this.getVariant());
+
+            int variant = this.random.nextInt(88);
+            this.setVariant(variant);
+            if (this.getVariant() <= 43) {
+                String randomName = defaultModelNames[this.random.nextInt(defaultModelNames.length)];
+                this.setCustomName(Text.literal(randomName));
+                this.setSlim(false);
+                System.out.println("Assigned 'default' name: " + randomName + " to variant: " + this.getVariant());
+            } else {
+                String randomName = slimModelNames[this.random.nextInt(slimModelNames.length)];
+                this.setCustomName(Text.literal(randomName));
+                System.out.println("Assigned 'slim' name: " + randomName + " to variant: " + this.getVariant());
+                this.setSlim(true);
+            }
+
+            this.setCustomNameVisible(true);
         }
-
-        this.setCustomNameVisible(true);
 
     }
 
@@ -70,9 +78,8 @@ public class NPCEntity extends PathAwareEntity {
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
         super.initDataTracker(builder);
-        int variant = this.random.nextInt(88);
-        builder.add(VARIANT, variant);
-        builder.add(SLIM, NPCUtil.isSlim(variant));
+        builder.add(VARIANT, 0);
+        builder.add(SLIM, false);
         builder.add(IS_PAUSED, false);
         builder.add(IS_FOLLOWING, false);
     }

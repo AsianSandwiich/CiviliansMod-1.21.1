@@ -28,6 +28,7 @@ public abstract class AbstratcNPCScreen extends Screen {
     private static final int ENTITY_PREVIEW_SIZE = 25; // Downscaled preview
     private static final int ENTITY_SPACING = 58;     // Adjusted spacing
     private static final int COLUMN_WIDTH = 130;
+    private int defaultSkin;
     private int selectedVariant; // No variant is selected by default
     private int scrollOffset = 0;  // Current scroll offset
     private int maxScrollOffset;  // Maximum allowed scroll offset
@@ -41,6 +42,11 @@ public abstract class AbstratcNPCScreen extends Screen {
     private ButtonWidget updefaultButton;
 
     /**
+     * used to know if the variant should be saved.
+     */
+    boolean save = false;
+
+    /**
      * represents the start and end indexes of the {@code List<Identifier>} defined under {@link NPCUtil} that represents the skins.
      */
     int[] indexes = new int[2];
@@ -48,15 +54,16 @@ public abstract class AbstratcNPCScreen extends Screen {
 
 
     public AbstratcNPCScreen(NPCEntity npc) {
-        this(npc, -1);
+        this(npc, -1, npc.getVariant());
     }
 
-    public AbstratcNPCScreen(NPCEntity npc, int selected) {
+    public AbstratcNPCScreen(NPCEntity npc, int selected, int defaultSkin) {
         super(Text.literal("Change NPC Variant"));
         this.npc = npc;
         this.originalVariant = npc.getVariant(); // Save the current variant to initialize the preview
         this.selectedVariant = selected;
         indexes = getStartAndEndIndexes();
+        this.defaultSkin = defaultSkin;
     }
 
     /**
@@ -164,21 +171,23 @@ public abstract class AbstratcNPCScreen extends Screen {
         int containerY = (this.height - containerHeight) / 2;
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Wide"),
-                button -> MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this.npc, this.selectedVariant))
+                button -> MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this.npc, this.selectedVariant, defaultSkin))
         ).dimensions(containerX + 82, containerY + 22, 39, 12).build());
 
         // Add Slim tab button
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Slim"),
-                button -> MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this.npc, this.selectedVariant))
+                button -> MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this.npc, this.selectedVariant, defaultSkin))
         ).dimensions(containerX + 121, containerY + 22, 40, 12).build());
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Custom"),
-                button -> MinecraftClient.getInstance().setScreen(new CustomNPCScreen(this.npc, this.selectedVariant))
+                button -> MinecraftClient.getInstance().setScreen(new CustomNPCScreen(this.npc, this.selectedVariant, defaultSkin))
         ).dimensions(containerX + 161, containerY + 22, 39, 12).build());
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Save"), button -> {
             npc.setSlim(NPCUtil.isSlim(this.selectedVariant));
+            save = true;
             this.close();
+            npc.setVariant(this.selectedVariant);
             scrollOffset = 0;
             updateScrollBarDimensions();
         }).dimensions(containerX + 11, containerY + 136, 50, 14).build());
@@ -233,6 +242,8 @@ public abstract class AbstratcNPCScreen extends Screen {
 
     @Override
     public void close() {
+        if (!save)
+            npc.setVariant(this.defaultSkin);
         if (MinecraftClient.getInstance().player != null) {
             NPCDataPayload payload = new NPCDataPayload(
                     npc.getUuid(),
@@ -243,6 +254,7 @@ public abstract class AbstratcNPCScreen extends Screen {
             );
             ClientPlayNetworking.send(payload); // Send data to the server
         }
+
         super.close();
     }
 
