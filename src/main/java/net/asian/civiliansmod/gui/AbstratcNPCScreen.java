@@ -177,6 +177,7 @@ public abstract class AbstratcNPCScreen extends Screen {
         ).dimensions(containerX + 161, containerY + 22, 39, 12).build());
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Save"), button -> {
+            npc.setSlim(NPCUtil.isSlim(this.selectedVariant));
             this.close();
             scrollOffset = 0;
             updateScrollBarDimensions();
@@ -302,8 +303,8 @@ public abstract class AbstratcNPCScreen extends Screen {
         int startY = containerY + 39; // Matches where variants start rendering
 
         // Column setup
-        int columnWidth = (COLUMN_WIDTH / 3) - 3; // Adjusted for columns in renderVariants
-        int columnOffset = 5;
+        int columnWidth = (COLUMN_WIDTH / 3) - 5; // Adjusted for columns in renderVariants
+        int columnOffset = 1;
 
         // Strict container boundaries
         if (mouseY < containerY || mouseY > containerY + containerHeight) {
