@@ -2,6 +2,7 @@ package net.asian.civiliansmod.gui;
 
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.networking.NPCDataPayload;
+import net.asian.civiliansmod.util.NPCUtil;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -35,9 +36,7 @@ public class CustomNPCScreen extends Screen {
     private int scrollbarY = 0;
     private final int originalVariant;
     private int scrollbarGrabOffset = 0;
-    private boolean isDefaultTab = true;
     private TextFieldWidget nameInputField;
-    private boolean isCustomTab = false;
     private ButtonWidget upslimButton;
     private ButtonWidget updefaultButton;
 
@@ -48,6 +47,11 @@ public class CustomNPCScreen extends Screen {
         this.originalVariant = npc.getVariant(); // Save the current variant to initialize the preview
         this.selectedVariant = -1; // No new skin is selected yet
     }
+
+    protected abstract List<Identifier> getSlimSkins();
+
+    protected abstract List<Identifier> getDefaultSkins();
+
 
     @Override
     public boolean shouldPause() {
@@ -64,6 +68,8 @@ public class CustomNPCScreen extends Screen {
         int visibleRows = (containerHeight - 55) / ENTITY_SPACING; // Adjust relative to the container height
 
         this.maxScrollOffset = Math.max(0, (totalRows - visibleRows) * ENTITY_SPACING);
+
+        startVariantIndex = maxScrollOffset / ENTITY_SPACING;
 
         // Scroll bar total height based on the container
         int scrollBarTotalHeight = containerHeight - 55; // Leave padding inside the container
@@ -112,8 +118,8 @@ public class CustomNPCScreen extends Screen {
         // Render the name input field
         this.nameInputField.render(context, mouseX, mouseY, delta);
 
-        this.upslimButton.visible = isCustomTab;
-        this.updefaultButton.visible = isCustomTab;
+        this.upslimButton.visible = this instanceof PlayerCustomNPCScreen;
+        this.updefaultButton.visible = this instanceof PlayerCustomNPCScreen;
 
         for (var button : this.children()) {
             if (button instanceof ButtonWidget) {
@@ -121,6 +127,7 @@ public class CustomNPCScreen extends Screen {
             }
         }
     }
+
     @Override
     protected void init() {
         super.init();
@@ -130,27 +137,12 @@ public class CustomNPCScreen extends Screen {
         int containerX = (this.width - containerWidth) / 2;
         int containerY = (this.height - containerHeight) / 2;
 
-        this.addDrawableChild(ButtonWidget.builder(Text.literal("Default"), button -> {
-            isDefaultTab = true;
-            isCustomTab = false;
-            scrollOffset = 0;
-            updateScrollBarDimensions();
-        }).dimensions(containerX + 82, containerY + 22, 39, 12).build());
+        this.addDrawableChild(ButtonWidget.builder(Text.literal("Default"), button -> MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this.npc))).dimensions(containerX + 82, containerY + 22, 39, 12).build());
 
         // Add Slim tab button
-        this.addDrawableChild(ButtonWidget.builder(Text.literal("Slim"), button -> {
-            isDefaultTab = false;
-            isCustomTab = false;
-            scrollOffset = 0;
-            updateScrollBarDimensions();
-        }).dimensions(containerX + 121, containerY + 22, 40, 12).build());
+        this.addDrawableChild(ButtonWidget.builder(Text.literal("Slim"), button -> MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this.npc))).dimensions(containerX + 121, containerY + 22, 40, 12).build());
 
-        this.addDrawableChild(ButtonWidget.builder(Text.literal("Custom"), button -> {
-            isDefaultTab = false;
-            isCustomTab = true; // Activate the Custom tab
-            scrollOffset = 0;
-            updateScrollBarDimensions();
-        }).dimensions(containerX + 161, containerY + 22, 39, 12).build());
+        this.addDrawableChild(ButtonWidget.builder(Text.literal("Custom"), button -> MinecraftClient.getInstance().setScreen(new PlayerCustomNPCScreen(this.npc))).dimensions(containerX + 161, containerY + 22, 39, 12).build());
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Save"), button -> {
             this.close();
@@ -220,6 +212,7 @@ public class CustomNPCScreen extends Screen {
         }
         super.close();
     }
+
     private void renderVanillaScrollBar(DrawContext context) {
         int containerWidth = 256;
         int containerHeight = 166;
@@ -256,13 +249,13 @@ public class CustomNPCScreen extends Screen {
         if (isCustomTab) {
 
             return super.mouseClicked(mouseX, mouseY, button);
-        }
+        }*/
 
         if (button == 0) { // Left mouse button
-            int panelX = isDefaultTab ? (containerX + 10) : (containerX + COLUMN_WIDTH + 30);
+            //int panelX = isDefaultTab ? (containerX + 10) : (containerX + COLUMN_WIDTH + 30);
 
             // Detect which variant is clicked based on the selected tab
-            int clickedVariant = detectClickedVariant(mouseX, mouseY, panelX, isDefaultTab);
+            int clickedVariant = detectClickedVariant(mouseX, mouseY/*, panelX*/);
 
             if (clickedVariant != -1) {
                 this.selectedVariant = clickedVariant;
@@ -276,8 +269,8 @@ public class CustomNPCScreen extends Screen {
     }
 
 
-    private int detectClickedVariant(double mouseX, double mouseY, int panelX, boolean isDefaultTab) {
-        // Container dimensions
+    private int detectClickedVariant(double mouseX, double mouseY/*, int panelX/*, boolean isDefaultTab*/) {
+        /*// Container dimensions
         int containerHeight = 166;
         int containerY = (this.height - containerHeight) / 2;
 
@@ -321,7 +314,51 @@ public class CustomNPCScreen extends Screen {
             }
         }
 
-        return -1; // No variant was clicked
+        return -1; // No variant was clicked*/
+
+        int containerHeight = 166;
+        int containerY = (this.height - containerHeight) / 2;
+        int startY = containerY + 39; // Matches where variants start rendering
+
+        // Column setup
+        int columnWidth = (COLUMN_WIDTH / 3) - 10; // Adjusted for columns in renderVariants
+        int columnOffset = 5;
+
+        // Fine-tune X offsets
+        //int xRightOffset = isDefaultTab ? 76 : -76; // Shift Slim tab to the left
+
+        // Strict container boundaries
+        if (mouseY < containerY || mouseY > containerY + containerHeight) {
+            return -1; // Mouse click is entirely outside the vertical container area
+        }
+
+
+        int minIndex = Math.min(this.skins.size() - this.startVariantIndex, 9);
+
+        // Loop through all rendered variants
+        for (int i = 0; i <= minIndex + 9; i++) {
+            // Current variant's row and column
+            int rowIndex = (i) / 3; // Determine row
+            int columnIndex = (i) % 3; // Determine column
+
+
+            // Variant's calculated position
+            int xPosition = /*panelX +*/ columnIndex * (columnWidth + columnOffset) /*+ xRightOffset*/;
+            int yPosition = startY + rowIndex * ENTITY_SPACING - scrollOffset;
+
+            // Extra check: Skip rows rendered above the visible container
+            if (yPosition < containerY || yPosition + ENTITY_SPACING > containerY + containerHeight) {
+                continue; // Skip variants not actually visible
+            }
+
+            // Check if the mouse position falls within the variant's hover box
+            if (mouseX >= xPosition && mouseX <= xPosition + columnWidth &&
+                    mouseY >= yPosition && mouseY <= yPosition + ENTITY_SPACING) {
+                return this.startVariantIndex + i; // Return the clicked variant index
+            }
+        }
+
+        return -1;
     }
 
 
@@ -406,11 +443,44 @@ public class CustomNPCScreen extends Screen {
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
-    private void renderVariants(DrawContext context, int mouseX, int mouseY, float ignoredDelta, boolean isDefault, int scrollOffset) {
-        // Container dimensions
-        if (isCustomTab) {
-            return;
+
+    private void renderEntity(DrawContext context, int scrollOffset, int mouseX, int mouseY) {
+        int containerWidth = 256;
+        int containerHeight = 166;
+        int containerX = (this.width - containerWidth) / 2;
+        int containerY = (this.height - containerHeight) / 2;
+
+        // Initial Y position relative to the container
+        int startY = containerY + 61;
+
+
+        int panelX = containerX + 77; // Position Default tab models within the container
+
+        // Adjust spacing for columns for better alignment
+        int columnWidth = (COLUMN_WIDTH / 3) - 10; // Reduced width to bring columns closer
+        int columnOffset = 6; // Fine-tune additional space between columns
+
+        //draw models. If empty, nothing rendered
+        for (int i = 0; i < this.skins.size(); i++) {
+            // Compute the row and column positions for each variant
+            int rowIndex = (i - startVariantIndex) / 3; // Divide into groups of 3 per row
+            int columnIndex = (i - startVariantIndex) % 3; // Determine which column the model is in
+            int xPosition = panelX + columnIndex * (columnWidth + columnOffset); // Adjust horizontal position
+            int yPosition = startY + rowIndex * ENTITY_SPACING - scrollOffset; // Adjust vertical position
+
+            // Skip rows that are completely out of container bounds
+            if (yPosition + ENTITY_SPACING < containerY || yPosition > containerY + containerHeight) {
+                continue; // Don't render if the row is invisible
+            }
+
+            // Render the model for the current variant
+
+            renderVariantPreview(context, xPosition, yPosition, i + this.startVariantIndex, mouseX, mouseY);
         }
+    }
+
+
+    private void renderVariants(DrawContext context, int mouseX, int mouseY, float ignoredDelta, boolean isDefault, int scrollOffset) {
 
         int containerWidth = 256;
         int containerHeight = 166;
@@ -449,7 +519,6 @@ public class CustomNPCScreen extends Screen {
     }
 
     private void renderVariantPreview(DrawContext context, int x, int y, int variantIndex, int mouseX, int mouseY) {
-        if (variantIndex > 87) return; // Skip invalid indices
         NPCEntity previewNPC = createPreviewNPC(variantIndex);
 
         // Container dimensions
@@ -466,11 +535,13 @@ public class CustomNPCScreen extends Screen {
         int adjustedX = x + 5; // Narrow the hover box by reducing 1 pixel from the left
         int adjustedY = y - 24; // Move the top of the box higher
         int entityWidth = 39;   // Set a fixed width (e.g., 50 pixels)
-        int entityHeight = ENTITY_SPACING ;  // Set a fixed height (e.g., 50 pixels)
+        int entityHeight = ENTITY_SPACING;  // Set a fixed height (e.g., 50 pixels)
 
         // Ensure the variant preview stays within the container bounds
-        if (adjustedX + entityWidth > maxX || adjustedX < containerX) return; // Skip rendering if out of bounds horizontally
-        if (adjustedY + entityHeight > maxY || adjustedY < containerY) return; // Skip rendering if out of bounds vertically
+        if (adjustedX + entityWidth > maxX || adjustedX < containerX)
+            return; // Skip rendering if out of bounds horizontally
+        if (adjustedY + entityHeight > maxY || adjustedY < containerY)
+            return; // Skip rendering if out of bounds vertically
 
         // Render the entity preview
         renderEntity(context.getMatrices(), x + ENTITY_PREVIEW_SIZE, y + (ENTITY_SPACING / 2), ENTITY_PREVIEW_SIZE, previewNPC, 145.0F);
@@ -504,10 +575,19 @@ public class CustomNPCScreen extends Screen {
         World world = MinecraftClient.getInstance().world;
 
         @SuppressWarnings("unchecked")// Create a new preview NPC
-        NPCEntity previewNPC = new NPCEntity((EntityType<? extends PathAwareEntity>) npc.getType(), world );
+        NPCEntity previewNPC = new NPCEntity((EntityType<? extends PathAwareEntity>) npc.getType(), world);
 
         // Set the variant to the current index (this determines slim/default model)
-        previewNPC.setVariant(variantIndex);
+        int offset;
+        if (this instanceof DefaultNPCScreen)
+            offset = 0;
+        else if (this instanceof SlimNPCScreen)
+            offset = NPCUtil.getDefaultSkinsCount();
+        else {
+            offset = NPCUtil.getDefaultSkinsCount() + NPCUtil.getSlimSkinsCount();
+        }
+
+        previewNPC.setVariant(offset + variantIndex);
 
         // These properties disable animations and sounds during preview
         previewNPC.setAiDisabled(true);
@@ -515,7 +595,7 @@ public class CustomNPCScreen extends Screen {
         previewNPC.setHeadYaw(0.0F);
 
         return previewNPC;
-    }
+    }*/
 
     private void renderEntity(MatrixStack matrices, int x, int y, int scale, Entity entity, float rotation) {
         EntityRenderDispatcher dispatcher = MinecraftClient.getInstance().getEntityRenderDispatcher();

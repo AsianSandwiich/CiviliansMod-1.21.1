@@ -2,6 +2,7 @@ package net.asian.civiliansmod.renderer;
 
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.model.NPCModel;
+import net.asian.civiliansmod.util.NPCUtil;
 import net.minecraft.client.render.entity.MobEntityRenderer;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.model.EntityModelLayer;
@@ -38,7 +39,8 @@ public class NPCRenderer extends MobEntityRenderer<NPCEntity, NPCModel<NPCEntity
 
         String textureType = variant < 44 ? "default" : "slim";
         return Identifier.of("civiliansmod", "textures/entity/npc/" + textureType + "/"
-                + textureType + "_" + (variant % 44) + ".png");
+                + textureType + "_" + (variant % 44) + ".png");*/
+        return entity.getSkinTexture();
     }
 
     /**

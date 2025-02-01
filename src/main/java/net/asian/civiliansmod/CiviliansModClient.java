@@ -1,6 +1,8 @@
 package net.asian.civiliansmod;
 
+import net.asian.civiliansmod.util.NPCUtil;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityModelLayerRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.asian.civiliansmod.renderer.NPCRenderer;
@@ -19,6 +21,7 @@ public class CiviliansModClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        System.out.println("hi");
 
         EntityRendererRegistry.register(CiviliansMod.NPC_ENTITY, NPCRenderer::new);
 
@@ -26,6 +29,10 @@ public class CiviliansModClient implements ClientModInitializer {
 
         EntityModelLayerRegistry.registerModelLayer(SLIM_ENTITY_MODEL_LAYER, () -> NPCModel.getTexturedModelData(true));
 
+
+        ClientPlayConnectionEvents.INIT.register((phase,listener) ->
+                NPCUtil.refreshTextures()
+        );
         CiviliansMod.LOGGER.info("[CiviliansMod] Model layers registered!");
     }
 }

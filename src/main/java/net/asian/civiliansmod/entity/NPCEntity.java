@@ -1,6 +1,8 @@
 package net.asian.civiliansmod.entity;
 
 import net.asian.civiliansmod.entity.goal.CustomDoorGoal;
+import net.asian.civiliansmod.gui.DefaultNPCScreen;
+import net.asian.civiliansmod.util.NPCUtil;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.entity.EntityType;
@@ -21,6 +23,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -29,7 +32,7 @@ import net.minecraft.client.MinecraftClient;
 
 public class NPCEntity extends PathAwareEntity {
 
-    private static final TrackedData<Integer> VARIANT = DataTracker.registerData(NPCEntity.class,TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Integer> VARIANT = DataTracker.registerData(NPCEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private float targetYaw = 0.0F; // The yaw to smoothly rotate towards
     private boolean isTurning = false; // Whether the NPC is currently in the process of turning
     private int lookAtPlayerTicks = 0;
@@ -47,10 +50,10 @@ public class NPCEntity extends PathAwareEntity {
             this.setVariant(variant);
 
             // Assign default model and slim model names to the entity
-            String[] defaultModelNames = { "Charles", "Cade", "Henry", "Liam", "Rodney", "Nathaniel", "Elliot", "Julian", "Malcolm", "Tobias",
-                    "Wesley", "Felix", "Desmond", "Simon", "Miles", "Everett", "Dorian", "Quentin", "Cedric", "Adrian", "Roman", "Marcus", "Gideon", "Levi", "Jasper" };
-            String[] slimModelNames = { "Evelyn", "Sarah", "Olivia", "Emma", "Alexia", "Amelia", "Celeste", "Lillian", "Joleen", "Rosalie",
-                    "Clara", "Vivienne", "Elena", "Margot", "Nora", "Daphne", "Fiona", "Genevieve", "Juliette", "Lucille", "Naomi", "Ivy", "Serena", "Vera", "Adelaide" };
+            String[] defaultModelNames = {"Charles", "Cade", "Henry", "Liam", "Rodney", "Nathaniel", "Elliot", "Julian", "Malcolm", "Tobias",
+                    "Wesley", "Felix", "Desmond", "Simon", "Miles", "Everett", "Dorian", "Quentin", "Cedric", "Adrian", "Roman", "Marcus", "Gideon", "Levi", "Jasper"};
+            String[] slimModelNames = {"Evelyn", "Sarah", "Olivia", "Emma", "Alexia", "Amelia", "Celeste", "Lillian", "Joleen", "Rosalie",
+                    "Clara", "Vivienne", "Elena", "Margot", "Nora", "Daphne", "Fiona", "Genevieve", "Juliette", "Lucille", "Naomi", "Ivy", "Serena", "Vera", "Adelaide"};
 
             if (variant >= 0 && variant <= 43) {  // Default models: Variants 0, 1, 2
                 String randomName = defaultModelNames[this.random.nextInt(defaultModelNames.length)];
@@ -114,6 +117,10 @@ public class NPCEntity extends PathAwareEntity {
 
     public void setPaused(boolean paused) {
         this.dataTracker.set(IS_PAUSED, paused);
+    }
+
+    public Identifier getSkinTexture() {
+        return NPCUtil.getNPCTexture(VARIANT.id());
     }
 
     @Override
@@ -298,9 +305,10 @@ public class NPCEntity extends PathAwareEntity {
         // Delegate to superclass for other interactions
         return super.interactMob(player, hand);
     }
+
     @Environment(EnvType.CLIENT)
     private void openCustomNPCScreen() {
-        MinecraftClient.getInstance().setScreen(new CustomNPCScreen(this));
+        MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this));
     }
 
     @Override
@@ -308,6 +316,7 @@ public class NPCEntity extends PathAwareEntity {
         // Adjusted offset to attach the leash to the NPC's hips
         return new Vec3d(0.0, 0.9, 0.0); // Adjust the Y-axis offset as needed.
     }
+
     public boolean canBeLeashedBy(PlayerEntity player) {
         // Allow leashing only if the player is in survival or adventure mode
         return !this.isLeashed() && !player.isSneaking();
