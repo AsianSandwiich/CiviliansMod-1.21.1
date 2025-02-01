@@ -5,11 +5,11 @@ import java.io.File;
 import java.io.IOException;
 public class SkinFolderManager {
 
-    private static final String BASE_FOLDER_NAME_1 = "civiliansmod_skins_default";
+    private static final String BASE_FOLDER_NAME_1 = "civiliansmod_skins_wide";
     private static final String BASE_FOLDER_NAME_2 = "civiliansmod_skins_slim";
     static {
         // Ensure both folders are created when the manager is initialized
-        ensureFolderExists("default");
+        ensureFolderExists("wide");
         ensureFolderExists("slim");
     }
     public static void ensureFolderExists(String subFolderName) {
@@ -23,7 +23,7 @@ public class SkinFolderManager {
         }
 
         // Proceed with creating only the specified folder
-        String baseFolderName = subFolderName.equalsIgnoreCase("default") ? BASE_FOLDER_NAME_1 : BASE_FOLDER_NAME_2;
+        String baseFolderName = subFolderName.equalsIgnoreCase("wide") ? BASE_FOLDER_NAME_1 : BASE_FOLDER_NAME_2;
         File baseFolder = new File(MinecraftClient.getInstance().runDirectory, baseFolderName);
 
         if (!baseFolder.exists()) {
@@ -33,9 +33,9 @@ public class SkinFolderManager {
     }
 
 
-    public static void openFolder(String subFolderName) {
+    public static void openFolder(NPCModel subFolderName) {
         // Determine the base folder name based on the subFolderName
-        String baseFolderName = subFolderName.equalsIgnoreCase("default") ? BASE_FOLDER_NAME_1 : BASE_FOLDER_NAME_2;
+        String baseFolderName = subFolderName == NPCModel.DEFAULT ? BASE_FOLDER_NAME_1 : BASE_FOLDER_NAME_2;
 
         // Fetch the actual folder
         File folderToOpen = new File(MinecraftClient.getInstance().runDirectory, baseFolderName);
@@ -55,5 +55,10 @@ public class SkinFolderManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public enum NPCModel {
+        SLIM,
+        DEFAULT
     }
 }
