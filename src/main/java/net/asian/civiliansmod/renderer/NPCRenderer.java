@@ -1,5 +1,6 @@
 package net.asian.civiliansmod.renderer;
 
+import net.asian.civiliansmod.custom_skins.SkinFolderManager;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.model.NPCModel;
 import net.asian.civiliansmod.util.NPCUtil;
@@ -35,9 +36,21 @@ public class NPCRenderer extends MobEntityRenderer<NPCEntity, NPCModel<NPCEntity
      */
     @Override
     public Identifier getTexture(NPCEntity entity) {
-        int variant = entity.getVariant();
+        /*int variant = entity.getVariant();
+        String textureType;
+
+        if (variant < 44) {
+            textureType = "default";
+        } else if (variant < 88) {
+            textureType = "slim";
+        } else {
+            textureType = "custom";
+        }
 /*
-        String textureType = variant < 44 ? "default" : "slim";
+        if (variant >= 88) {
+            return SkinFolderManager.getCustomSkinTexture(variant);
+        }
+
         return Identifier.of("civiliansmod", "textures/entity/npc/" + textureType + "/"
                 + textureType + "_" + (variant % 44) + ".png")*/
         return entity.getSkinTexture();
