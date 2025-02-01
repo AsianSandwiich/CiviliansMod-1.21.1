@@ -1,7 +1,9 @@
 package net.asian.civiliansmod.entity;
 
 import net.asian.civiliansmod.entity.goal.CustomDoorGoal;
+import net.asian.civiliansmod.gui.CustomNPCScreen;
 import net.asian.civiliansmod.gui.DefaultNPCScreen;
+import net.asian.civiliansmod.gui.SlimNPCScreen;
 import net.asian.civiliansmod.util.NPCUtil;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -27,12 +29,12 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.asian.civiliansmod.gui.CustomNPCScreen;
 import net.minecraft.client.MinecraftClient;
 
 public class NPCEntity extends PathAwareEntity {
 
     private static final TrackedData<Integer> VARIANT = DataTracker.registerData(NPCEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Boolean> SLIM = DataTracker.registerData(NPCEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private float targetYaw = 0.0F; // The yaw to smoothly rotate towards
     private boolean isTurning = false; // Whether the NPC is currently in the process of turning
     private int lookAtPlayerTicks = 0;
@@ -74,8 +76,13 @@ public class NPCEntity extends PathAwareEntity {
     protected void initDataTracker(DataTracker.Builder builder) {
         super.initDataTracker(builder);
         builder.add(VARIANT, 0);
+        builder.add(SLIM, false);
         builder.add(IS_PAUSED, false);
         builder.add(IS_FOLLOWING, false);
+    }
+
+    public void setSlim(boolean slim) {
+        this.dataTracker.set(SLIM, slim);
     }
 
     // Getter for the variant
@@ -95,7 +102,7 @@ public class NPCEntity extends PathAwareEntity {
 
     // Helper method to determine if the current variant is slim
     public boolean isSlim() {
-        return this.getVariant() >= 44 && this.getVariant() <= 87;
+        return this.dataTracker.get(SLIM);
     }
 
     @Override
@@ -120,7 +127,7 @@ public class NPCEntity extends PathAwareEntity {
     }
 
     public Identifier getSkinTexture() {
-        return NPCUtil.getNPCTexture(VARIANT.id());
+        return NPCUtil.getNPCTexture(getVariant());
     }
 
     @Override
@@ -308,7 +315,13 @@ public class NPCEntity extends PathAwareEntity {
 
     @Environment(EnvType.CLIENT)
     private void openCustomNPCScreen() {
-        MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this));
+        if(NPCUtil.hasDefaultSkin(this.getVariant())){
+            MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this));
+        } else if (NPCUtil.hasSlimSkin(this.getVariant())) {
+            MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this));
+        }else {
+            MinecraftClient.getInstance().setScreen(new CustomNPCScreen(this));
+        }
     }
 
     @Override
