@@ -3,7 +3,7 @@
   "id": "civiliansmod",
   "name": "Civilians Mod",
   "version": "1.1.1",
-  "description": "A client-side Minecraft mod introducing civilians.",
+  "description": "A client and server side Minecraft mod introducing civilians.",
   "icon": "assets/civiliansmod/icon.png",
   "authors": [
     "AsianSandwiich"
@@ -29,9 +29,9 @@
   },
   "custom": {
     "modmenu": {
-      "description": "A client-side Minecraft mod introducing civilians.",
+      "description": "A client and server side Minecraft mod introducing civilians.",
       "badges": [
-        "client"
+        "client and server"
       ],
       "links": {
         "modmenu.modrinth": "https://modrinth.com/mod/civiliansmod"
