@@ -38,7 +38,7 @@ public class CustomNPCScreen extends AbstratcNPCScreen {
         int containerY = (this.height - containerHeight) / 2;
 
         this.addDrawableChild(new ImageButtonWidget(
-                containerX + 220, containerY + containerHeight - 140, 15, 15,
+                containerX + 235, containerY + containerHeight - 160, 15, 15,
                 Identifier.of(CiviliansMod.MOD_ID, "textures/gui/reset_button.png"),
                 (press) -> {
                     NPCUtil.refreshTextures();

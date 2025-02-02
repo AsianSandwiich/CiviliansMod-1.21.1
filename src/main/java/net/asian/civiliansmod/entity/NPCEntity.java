@@ -175,6 +175,9 @@ public class NPCEntity extends PathAwareEntity {
 
     @Override
     public boolean damage(DamageSource source, float amount) {
+        if (isPaused()) {
+            return false; // Disallow damage and stop further logic if in "Stay" mode
+        }
         boolean hurt = super.damage(source, amount);
 
         if (hurt && source.getAttacker() != null) {
