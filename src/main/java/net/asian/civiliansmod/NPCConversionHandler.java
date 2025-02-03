@@ -13,7 +13,9 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.village.VillagerProfession;
 import net.minecraft.world.World;
-import org.joml.Vector3f;
+
+
+import java.awt.*;
 
 public class NPCConversionHandler {
 
@@ -60,7 +62,7 @@ public class NPCConversionHandler {
 
     private static void convertVillagerToNPC(VillagerEntity villager, ServerWorld world, net.minecraft.entity.player.PlayerEntity player) {
         // Create a new instance of NPCEntity
-        NPCEntity npcEntity = CiviliansMod.NPC_ENTITY.create(world);
+        NPCEntity npcEntity = CiviliansMod.NPC_ENTITY.create(world, null);
 
         if (npcEntity != null) {
 
@@ -99,29 +101,23 @@ public class NPCConversionHandler {
         }
     }
 
-    // Spawn rainbow particles at the given position
+
     private static void spawnRainbowParticles(double x, double y, double z, ServerWorld world) {
         // Create rainbow particles using HSB (Hue, Saturation, Brightness)
         for (float hue = 0; hue <= 1; hue += 0.1f) {
+            // Convert HSB to a packed RGB integer
+            int color = Color.HSBtoRGB(hue, 1.0F, 1.0F);
 
-            int color = java.awt.Color.HSBtoRGB(hue, 1.0F, 1.0F);
-            float red = ((color >> 16) & 0xFF) / 255.0F;
-            float green = ((color >> 8) & 0xFF) / 255.0F;
-            float blue = (color & 0xFF) / 255.0F;
-
-
-            Vector3f rgbColor = new Vector3f(red, green, blue);
-
-            // Create the dust particle effect using the converted color
+            // Create the dust particle effect directly using the packed RGB integer
             DustParticleEffect rainbowParticle = new DustParticleEffect(
-                    rgbColor,
-                    1.0F // Particle scale
+                    color, // Packed RGB color
+                    1.0F   // Particle scale
             );
 
-            // Spawn multiple particles for the current hue
+            // Spawn multiple particles for the current hue value
             world.spawnParticles(
                     rainbowParticle, // Particle effect
-                    x, y, z,         // Position at Villager's location
+                    x, y, z,         // Position
                     10,              // Number of particles
                     0.5, 0.5, 0.5,   // Offset/spread (x, y, z)
                     0.01             // Speed

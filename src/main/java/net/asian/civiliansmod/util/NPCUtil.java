@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 @Environment(EnvType.CLIENT)
@@ -155,16 +156,19 @@ public class NPCUtil {
                             return;
                         }
                         NativeImageBackedTexture dynamicTexture = new NativeImageBackedTexture(image);
-                        skins.add(MinecraftClient.getInstance().getTextureManager().registerDynamicTexture(CiviliansMod.MOD_ID + "_custom_skin", dynamicTexture));
+
+                        // Use registerTexture with a unique Identifier
+                        Identifier textureId = Identifier.of(CiviliansMod.MOD_ID, "custom_skin_" + UUID.randomUUID());
+                        MinecraftClient.getInstance().getTextureManager().registerTexture(textureId, dynamicTexture);
+
+                        skins.add(textureId);
                         image.close();
                     } catch (Exception e) {
-                        CiviliansMod.LOGGER.error("error while converting skin files");
-                        e.printStackTrace();
+                        CiviliansMod.LOGGER.error("Error while converting skin files", e);
                     }
 
                 } catch (IOException e) {
-                    CiviliansMod.LOGGER.error("error while converting skin files");
-                    e.printStackTrace();
+                    CiviliansMod.LOGGER.error("Error while converting skin files", e);
                 }
             }
 
