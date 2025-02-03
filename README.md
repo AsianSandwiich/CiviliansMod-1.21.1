@@ -39,3 +39,15 @@
 - Tip: Somehow get a villager to where you are building first, or make a villager breeder to have them at disposal.
 - Tip 2: **Sneak + Right click on any NPC to open the customizer GUI**
 <br style="page-break-before: always">
+
+## HOW TO UPLOAD CUSTOM SKINS FOR YOUR NPC!
+
+- Open GUI and click on the 'Custom' tab.
+- 2 Buttons will pop up '**↑Wide**' and '**↑Slim**'
+- There are two different types of minecraft skins, slim and wide. Drag and drop the .png file of the skin in the designated folder. So if you want to upload a slim skin (3px wide arms) put that in the ↑Slim folder. If you want to add a custom wide skin (4px wide arms) put that in the ↑Wide folder.
+- Click the refresh button in the top right of the GUI and your skins will now show up in the GUI to be applied to your NPC!
+
+![CustomTab](https://cdn.modrinth.com/data/cached_images/9069786e0b2c0fc5f9a322d48cd6476a86749519.png)
+<br style="page-break-before: always">
+_This is uploaded in the '**↑Wide**' folder because it has 4px arms._
+![Folder](https://cdn.modrinth.com/data/cached_images/ca749d9620c81703155dcc9e8056a49d960c149a.png)
