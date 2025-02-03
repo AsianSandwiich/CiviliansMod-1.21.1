@@ -2,9 +2,8 @@ package net.asian.civiliansmod.model;
 
 import net.minecraft.client.model.*;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
-import net.minecraft.entity.LivingEntity;
 
-public class NPCModel<T extends LivingEntity> extends PlayerEntityModel<T> {
+public class NPCModel extends PlayerEntityModel {
 
     public NPCModel(ModelPart root, boolean slim) {
         super(root, slim); // Automatically uses the slim parameter for arms

@@ -21,6 +21,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -161,8 +162,8 @@ public class NPCEntity extends PathAwareEntity {
 
     public static DefaultAttributeContainer.Builder createAttributes() {
         return PathAwareEntity.createMobAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 20.0) // 20HP
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.3); // Normal speed
+                .add(EntityAttributes.MAX_HEALTH, 20.0) // 20HP
+                .add(EntityAttributes.MOVEMENT_SPEED, 0.3); // Adjusted speed
     }
 
     @Override
@@ -174,17 +175,22 @@ public class NPCEntity extends PathAwareEntity {
     }
 
     @Override
-    public boolean damage(DamageSource source, float amount) {
+    public boolean damage(ServerWorld world, DamageSource source, float amount) {
+        // Check if the entity is in a "paused" state (custom logic)
         if (isPaused()) {
-            return false; // Disallow damage and stop further logic if in "Stay" mode
+            return false; // Prevent damage and stop further processing
         }
-        boolean hurt = super.damage(source, amount);
 
+        // Call the new `super.damage` method with the correct parameters
+        boolean hurt = super.damage(world, source, amount);
+
+        // If the entity was damaged and there is an attacker
         if (hurt && source.getAttacker() != null) {
-            if (!this.getWorld().isClient()) {
+            if (!world.isClient()) {
                 Text nameText = this.getCustomName();
-                String npcName = nameText != null ? nameText.getString() : "NPC";
+                String npcName = (nameText != null) ? nameText.getString() : "NPC";
 
+                // Define random hit dialogues
                 String[] hitDialogues = {
                         "Ouch! That hurt!",
                         "Hey, watch it!",
@@ -196,37 +202,33 @@ public class NPCEntity extends PathAwareEntity {
                         "Fight me fair and square!",
                         "Watch it pal, you don't know who you're messing with.",
                         "Ow!",
-                        "GET AWAY FROM ME!",
-                        "Why must this world cast unfortunate events upon me!",
-                        "Hey...please stop I have already had a long day.",
-                        "IF ONLY THERE WAS A HERO WHO COULD SAVE ME!",
-                        "Lash your anger out on the sheep, not me!",
-                        "I'm so sorry, I'm so sorry!",
-                        "The prophecy foretold you would do this.",
-                        "Friends shouldn't hurt other friends!",
                         "@$%#&!!"
                 };
 
+                // Pick a random dialogue
                 String hitDialogue = hitDialogues[this.random.nextInt(hitDialogues.length)];
 
+                // Send a message to the attacking player
                 if (source.getAttacker() instanceof PlayerEntity player) {
-                    player.sendMessage(Text.literal(npcName + ": " + hitDialogue));
+                    player.sendMessage(Text.literal(npcName + ": " + hitDialogue), false);
                 }
 
+                // Define flee behavior: Calculate direction vector for fleeing
                 double dx = this.getX() - source.getAttacker().getX();
                 double dz = this.getZ() - source.getAttacker().getZ();
                 double fleeDistance = 12.0;
 
+                // Start moving the entity away from the attacker
                 this.getNavigation().startMovingTo(
                         this.getX() + dx * fleeDistance,
                         this.getY(),
                         this.getZ() + dz * fleeDistance,
-                        1.2
+                        1.2 // Movement speed when fleeing
                 );
             }
         }
 
-        return hurt;
+        return hurt; // Return whether the entity was successfully damaged
     }
 
     @Override
@@ -309,7 +311,7 @@ public class NPCEntity extends PathAwareEntity {
                 };
 
                 String dialogue = dialogues[this.random.nextInt(dialogues.length)];
-                player.sendMessage(Text.literal(npcName + ": " + dialogue));
+                player.sendMessage(Text.literal(npcName + ": " + dialogue), false);
             }
             return ActionResult.SUCCESS;
         }

@@ -9,6 +9,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.nbt.NbtCompound;
@@ -110,7 +111,18 @@ public abstract class AbstratcNPCScreen extends Screen {
         int containerY = (this.height - containerHeight) / 2;
 
         // Draw the container texture (centered)
-        context.drawTexture(guiTexture, containerX, containerY, 0, 0, containerWidth, containerHeight, containerWidth, containerHeight);
+        context.drawTexture(
+                RenderLayer::getText,   // Specify the render layer function
+                guiTexture,             // Texture Identifier
+                containerX,             // X position
+                containerY,             // Y position
+                0,                      // U coordinate of the texture
+                0,                      // V coordinate of the texture
+                containerWidth,         // Width of the region to draw
+                containerHeight,        // Height of the region to draw
+                containerWidth,         // Width of the texture
+                containerHeight         // Height of the texture
+        );
     }
 
     @Override
@@ -311,9 +323,6 @@ public abstract class AbstratcNPCScreen extends Screen {
             return -1; // Mouse click is entirely outside the vertical container area
         }
 
-
-        /// In the case where the number of skins to diplay is less than the number that the box can contain.
-        /// To avoid any issue, we introduce a minIndex
         int minIndex = Math.min(this.indexes[1] - this.indexes[0] - this.startVariantIndex, 9);
 
         // Loop through all rendered variants

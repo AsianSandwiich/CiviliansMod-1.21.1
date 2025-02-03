@@ -22,8 +22,8 @@ public record NPCDataPayload(UUID entityUuid, String customName, int variant, bo
             Uuids.PACKET_CODEC, NPCDataPayload::entityUuid,
             PacketCodecs.STRING, NPCDataPayload::customName,
             PacketCodecs.INTEGER, NPCDataPayload::variant,
-            PacketCodecs.BOOL, NPCDataPayload::isPaused, // Encodes/decodes the 'isPaused' state
-            PacketCodecs.BOOL, NPCDataPayload::isFollowing, // Encodes/decodes the 'isFollowing' state
+            PacketCodecs.BOOLEAN, NPCDataPayload::isPaused, // Encodes/decodes the 'isPaused' state
+            PacketCodecs.BOOLEAN, NPCDataPayload::isFollowing, // Encodes/decodes the 'isFollowing' state
             NPCDataPayload::new
     );
 
