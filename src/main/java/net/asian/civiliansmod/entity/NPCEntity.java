@@ -257,7 +257,7 @@ public class NPCEntity extends PathAwareEntity {
                     double dz = player.getZ() - this.getZ();
                     targetYaw = (float) (Math.atan2(dz, dx) * (180F / Math.PI)) - 90F;
                     isTurning = true;
-                    this.lookAtPlayerTicks = 170; // NPC will look at the player for 5 seconds (170 ticks)
+                    this.lookAtPlayerTicks = 170;
 
                     return ActionResult.SUCCESS;
                 } else {
