@@ -8,6 +8,9 @@
   "authors": [
     "AsianSandwiich"
   ],
+  "contributors": [
+    "RodoFire"
+  ],
   "contact": {
     "homepage": "https://modrinth.com/mod/civiliansmod",
     "sources": "https://github.com/AsianSandwiich/CiviliansMod-1.21.1"
@@ -24,8 +27,8 @@
   },
   "depends": {
     "fabricloader": ">=0.16.9",
-    "minecraft": "1.21.1",
-    "fabric-api": "0.115.0+1.21.1"
+    "minecraft": "1.21.4",
+    "fabric-api": ">=0.115.0+1.21.1"
   },
   "custom": {
     "modmenu": {
@@ -35,7 +38,6 @@
       ],
       "links": {
         "modmenu.modrinth": "https://modrinth.com/mod/civiliansmod"
-
       },
       "update_checker": true
     }
