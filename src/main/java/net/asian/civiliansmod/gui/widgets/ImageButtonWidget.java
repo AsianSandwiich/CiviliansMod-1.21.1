@@ -22,7 +22,7 @@ public class ImageButtonWidget extends ButtonWidget {
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         super.renderWidget(context, mouseX, mouseY, delta);
         context.drawTexture(
-                RenderLayer::getText, // Provide the render layer function
+                RenderLayer::getGuiTextured, // Provide the render layer function
                 image,                // The texture Identifier
                 this.getX() + 3,      // Destination X
                 this.getY() + 3,      // Destination Y
