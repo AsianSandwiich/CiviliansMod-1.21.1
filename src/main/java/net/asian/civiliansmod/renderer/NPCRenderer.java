@@ -9,7 +9,7 @@ import net.minecraft.client.render.entity.model.EntityModelLayer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 
-public class NPCRenderer extends MobEntityRenderer<NPCModel>  {
+public class NPCRenderer extends MobEntityRenderer<NPCEntity, NPCRenderState, NPCModel> {
     // Entity model layers for default and slim models
     public static final EntityModelLayer DEFAULT_ENTITY_MODEL_LAYER =
             new EntityModelLayer(Identifier.of("civiliansmod", "npc_default"), "main");
@@ -30,30 +30,42 @@ public class NPCRenderer extends MobEntityRenderer<NPCModel>  {
         this.slimModel = new NPCModel(context.getPart(SLIM_ENTITY_MODEL_LAYER), true);
     }
 
-    /**
-     * Dynamically assigns the appropriate texture based on the NPC's variant.
-     */
     @Override
-    public Identifier getTexture(NPCEntity entity) {
-        return entity.getSkinTexture();
+    public NPCRenderState createRenderState() {
+        return new NPCRenderState();
     }
 
     /**
      * Adjusts the rendering model (default vs slim) dynamically based on the entity's variant.
      */
     @Override
-    public void render(NPCEntity entity, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light) {
-        this.model = entity.isSlim() ? slimModel : defaultModel;
-        super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light);
+    public void render(NPCRenderState livingEntityRenderState, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
+        this.model = livingEntityRenderState.slim ? slimModel : defaultModel;
+        super.render(livingEntityRenderState, matrixStack, vertexConsumerProvider, i);
     }
 
     /**
      * Scales the NPC entity slightly for both slim and default models.
      */
     @Override
-    protected void scale(NPCEntity entity, MatrixStack matrices, float amount) {
+    protected void scale(NPCRenderState livingEntityRenderState, MatrixStack matrixStack) {
         float scale = 0.945F; // Uniform scaling for consistency
-        matrices.scale(scale, scale, scale);
-        super.scale(entity, matrices, amount);
+        matrixStack.scale(scale, scale, scale);
+        super.scale(livingEntityRenderState, matrixStack);
+    }
+
+    /**
+     * Dynamically assigns the appropriate texture based on the NPC's variant.
+     */
+    @Override
+    public Identifier getTexture(NPCRenderState livingEntityRenderState) {
+        return livingEntityRenderState.texture;
+    }
+
+    @Override
+    public void updateRenderState(NPCEntity livingEntity, NPCRenderState livingEntityRenderState, float f) {
+        super.updateRenderState(livingEntity, livingEntityRenderState, f);
+        livingEntityRenderState.texture = livingEntity.getSkinTexture();
+        livingEntityRenderState.slim = livingEntity.isSlim();
     }
 }

@@ -1,5 +1,6 @@
 package net.asian.civiliansmod;
 
+import net.asian.civiliansmod.entity.ModEntities;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.entity.Entity;
@@ -62,7 +63,7 @@ public class NPCConversionHandler {
 
     private static void convertVillagerToNPC(VillagerEntity villager, ServerWorld world, net.minecraft.entity.player.PlayerEntity player) {
         // Create a new instance of NPCEntity
-        NPCEntity npcEntity = CiviliansMod.NPC_ENTITY.create(world, null);
+        NPCEntity npcEntity = ModEntities.NPC_ENTITY.create(world, null);
 
         if (npcEntity != null) {
 

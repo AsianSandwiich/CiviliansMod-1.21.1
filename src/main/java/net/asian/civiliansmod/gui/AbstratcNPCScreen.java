@@ -112,7 +112,7 @@ public abstract class AbstratcNPCScreen extends Screen {
 
         // Draw the container texture (centered)
         context.drawTexture(
-                RenderLayer::getText,   // Specify the render layer function
+                RenderLayer::getGuiTextured,   // Specify the render layer function
                 guiTexture,             // Texture Identifier
                 containerX,             // X position
                 containerY,             // Y position
@@ -557,8 +557,7 @@ public abstract class AbstratcNPCScreen extends Screen {
 
         dispatcher.render(
                 entity,
-                0.0, // X position in world space
-                0.0, // Y position in world space
+                0.0,// Y position in world space
                 0.0, // Z position in world space
                 0.0F, // No head yaw
                 1.0F, // Partial tick (unused in GUI)
