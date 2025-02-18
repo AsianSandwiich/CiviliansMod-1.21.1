@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "civiliansmod",
   "name": "Civilians Mod",
-  "version": "1.2",
+  "version": "1.2.1",
   "description": "A client and server side Minecraft mod introducing civilians.",
   "icon": "assets/civiliansmod/icon.png",
   "authors": [
@@ -28,7 +28,7 @@
   "depends": {
     "fabricloader": ">=0.16.10",
     "minecraft": "1.21.4",
-    "fabric-api": ">=0.115.1+1.21.4"
+    "fabric-api": ">=0.116.1+1.21.4"
   },
   "custom": {
     "modmenu": {
