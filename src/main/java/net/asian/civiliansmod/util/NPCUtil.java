@@ -79,7 +79,7 @@ public class NPCUtil {
     }
 
     public static List<Identifier> getDefaultCustomSkins() {
-        try (var files = Files.list(MinecraftClient.getInstance().runDirectory.toPath().resolve("civiliansmod_skins_wide"))) {
+        try (var files = Files.list(FolderUtil.WIDE_SKIN_PATH)) {
             return searchAndConvertSkins(files);
         } catch (
                 IOException e) {
@@ -90,7 +90,7 @@ public class NPCUtil {
     }
 
     public static List<Identifier> getSlimCustomSkins() {
-        try (var files = Files.list(MinecraftClient.getInstance().runDirectory.toPath().resolve("civiliansmod_skins_slim"))) {
+        try (var files = Files.list(FolderUtil.SLIM_SKIN_PATH)) {
             return searchAndConvertSkins(files);
         } catch (
                 IOException e) {

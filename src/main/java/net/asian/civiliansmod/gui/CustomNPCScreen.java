@@ -1,6 +1,7 @@
 package net.asian.civiliansmod.gui;
 
 import net.asian.civiliansmod.CiviliansMod;
+import net.asian.civiliansmod.chat.NpcChat;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.widgets.ImageButtonWidget;
 import net.asian.civiliansmod.util.NPCUtil;
@@ -42,6 +43,7 @@ public class CustomNPCScreen extends AbstratcNPCScreen {
                 Identifier.of(CiviliansMod.MOD_ID, "textures/gui/reset_button.png"),
                 (press) -> {
                     NPCUtil.refreshTextures();
+                    NpcChat.refresh();
                     renitIndexes();
                     this.init();
                 }

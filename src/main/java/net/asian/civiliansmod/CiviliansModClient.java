@@ -1,5 +1,7 @@
 package net.asian.civiliansmod;
 
+import net.asian.civiliansmod.chat.NpcChat;
+import net.asian.civiliansmod.util.FolderUtil;
 import net.asian.civiliansmod.util.NPCUtil;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -31,9 +33,11 @@ public class CiviliansModClient implements ClientModInitializer {
         //Since some libraries and minecraft methods are not registered during the client initializer,
         //we gather the textures when a client joins a server.
         ClientPlayConnectionEvents.INIT.register((phase, listener) -> {
-                    NPCUtil.refreshTextures();
-                }
-        );
+            FolderUtil.init();
+
+            NPCUtil.refreshTextures();
+            NpcChat.registerChat();
+        });
         CiviliansMod.LOGGER.info("[CiviliansMod] Model layers registered!");
     }
 }

@@ -186,7 +186,7 @@ public abstract class AbstratcNPCScreen extends Screen {
         this.addDrawableChild(upslimButton);
 
         this.updefaultButton = ButtonWidget.builder(Text.literal("↑Wide"), button ->
-                        SkinFolderManager.openFolder(SkinFolderManager.NPCModel.DEFAULT)) // Pass "default", not "civiliansmod_skins_default"
+                        SkinFolderManager.openFolder(SkinFolderManager.NPCModel.WIDE)) // Pass "default", not "civiliansmod_skins_default"
                 .dimensions(containerX + 202, containerY + containerHeight - 66, 49, 20).build();
         this.addDrawableChild(updefaultButton);
 
