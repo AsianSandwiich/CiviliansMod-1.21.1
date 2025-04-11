@@ -291,7 +291,7 @@ public class NPCEntity extends PathAwareEntity {
 
     @Override
     public void tick() {
-        if (bl) {
+        if (this.getWorld().isClient && bl) {
             this.setSlim(NPCUtil.isSlim(this.getVariant()));
             bl = false;
         }

@@ -12,13 +12,10 @@ import net.minecraft.util.math.random.Random;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class NpcChat {
-    public static Map<ChatReason, List<String>> dialogues = new HashMap<>();
+    public static Map<ChatReason, List<String>> dialogues = new LinkedHashMap<>();
 
     public static String getRandomChat(ChatReason reason) {
         List<String> chat = dialogues.get(reason);

@@ -21,7 +21,7 @@ import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.Entity;
 import net.asian.civiliansmod.custom_skins.SkinFolderManager;
 
-public abstract class AbstratcNPCScreen extends Screen {
+public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
     private final NPCEntity npc;
 
     // Layout constants
@@ -58,7 +58,7 @@ public abstract class AbstratcNPCScreen extends Screen {
     }
 
     public AbstratcNPCScreen(NPCEntity npc, int selected, int defaultSkin) {
-        super(Text.literal("Change NPC Variant"));
+        super(npc, Text.literal("Change NPC Variant"));
         this.npc = npc;
         this.originalVariant = npc.getVariant(); // Save the current variant to initialize the preview
         this.selectedVariant = selected;
@@ -95,7 +95,6 @@ public abstract class AbstratcNPCScreen extends Screen {
         this.scrollbarHeight = 15;
         this.scrollbarY = containerY + 40 + (int) ((float) this.scrollOffset / this.maxScrollOffset * (scrollBarTotalHeight - this.scrollbarHeight));
     }
-
 
     private void drawMainContainer(DrawContext context) {
         // Texture Identifier moved here
