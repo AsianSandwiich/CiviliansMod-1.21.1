@@ -1,9 +1,6 @@
 package net.asian.civiliansmod.chat;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class DefaultChat {
 
@@ -23,7 +20,7 @@ public class DefaultChat {
     }
 
     private static Map<NpcChat.ChatReason, List<String>> getEnglish() {
-        Map<NpcChat.ChatReason, List<String>> englishDialogues = new HashMap<>();
+        Map<NpcChat.ChatReason, List<String>> englishDialogues = new LinkedHashMap<>();
         List<String> englishHurt = new ArrayList<>(List.of(
                 "Ouch! That hurt!",
                 "Hey, watch it!",
@@ -81,7 +78,7 @@ public class DefaultChat {
     }
 
     private static Map<NpcChat.ChatReason, List<String>> getFrench() {
-        Map<NpcChat.ChatReason, List<String>> frenchDialogues = new HashMap<>();
+        Map<NpcChat.ChatReason, List<String>> frenchDialogues = new LinkedHashMap<>();
         List<String> frenchHurt = new ArrayList<>(List.of(
                 "Aïe! Ca fait mal!",
                 "Pourquoi tu fais ça?!",
@@ -133,7 +130,7 @@ public class DefaultChat {
     }
 
     private static Map<NpcChat.ChatReason, List<String>> getCanadianFrench(){
-        Map<NpcChat.ChatReason, List<String>> quebec = new HashMap<>();
+        Map<NpcChat.ChatReason, List<String>> quebec = new LinkedHashMap<>();
         List<String> quebecHurt = new ArrayList<>(List.of(
                 "Tabarnak! Ça fait mal!",
                 "Pourquoi tu fais ça, câlisse?!",

@@ -1,18 +1,20 @@
 package net.asian.civiliansmod.gui;
 
 import net.asian.civiliansmod.chat.NpcChat;
+import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.widgets.TextButtonWidget;
+import net.asian.civiliansmod.networking.payload.npc.dialogue.AddDialoguePayload;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 
 public class AddDialogueScreen extends AbstractDialogueEditionScreen {
 
-    public AddDialogueScreen(String text, NpcChat.ChatReason reason, CustomChatScreen parent) {
-        super(text, reason, parent);
+    public AddDialogueScreen(NPCEntity npc, String text, NpcChat.ChatReason reason, CustomChatScreen parent) {
+        super(npc, text, reason, parent);
     }
 
     @Override
@@ -21,8 +23,11 @@ public class AddDialogueScreen extends AbstractDialogueEditionScreen {
         int y = height / 2;
         super.init();
         TextButtonWidget addButton = new TextButtonWidget(x + 6, y + 30, 60, 15, Text.translatable("civilians.gui.add"), button -> {
-            NpcChat.dialogues.computeIfAbsent(reason, (o) -> new ArrayList<>()).add(this.textFieldWidget.getText());
+            String language = MinecraftClient.getInstance().getLanguageManager().getLanguage();
+            npc.getChatManager().getTranslatedDialogues(language).computeIfAbsent(reason, (o) -> new ArrayList<>()).add(this.textFieldWidget.getText());
             parent.fullInit();
+            AddDialoguePayload payload = new AddDialoguePayload(npc.getUuid(), reason.toString(), language, this.textFieldWidget.getText());
+            ClientPlayNetworking.send(payload);
             MinecraftClient.getInstance().setScreen(parent);
         }, 0xFFFFFF, 0xFF00FF00);
 

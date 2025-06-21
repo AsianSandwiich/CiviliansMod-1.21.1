@@ -35,7 +35,7 @@ public class NPCRenderer extends MobEntityRenderer<NPCEntity, NPCModel<NPCEntity
      */
     @Override
     public Identifier getTexture(NPCEntity entity) {
-        return entity.getSkinTexture();
+        return entity.getSkinManager().getIdSkin().id();
     }
 
     /**
@@ -50,7 +50,7 @@ public class NPCRenderer extends MobEntityRenderer<NPCEntity, NPCModel<NPCEntity
             VertexConsumerProvider vertexConsumers,
             int light) {
         // Determine the model to use based on variant (slim = variants 3–5)
-        this.model = entity.isSlim() ? slimModel : defaultModel;
+        this.model = entity.getSkinManager().getIdSkin().slim() ? slimModel : defaultModel;
 
 
 

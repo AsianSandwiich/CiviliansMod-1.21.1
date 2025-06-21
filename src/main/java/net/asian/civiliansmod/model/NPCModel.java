@@ -19,10 +19,6 @@ public class NPCModel<T extends LivingEntity> extends PlayerEntityModel<T> {
         root.addChild(
                 "head",
                 ModelPartBuilder.create()
-
-
-
-
                         .uv(0, 0)
                         .cuboid(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F),
                 ModelTransform.pivot(0.0F, 0.0F, 0.0F)

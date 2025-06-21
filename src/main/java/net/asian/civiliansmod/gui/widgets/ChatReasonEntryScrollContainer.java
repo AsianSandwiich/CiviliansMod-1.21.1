@@ -1,6 +1,7 @@
 package net.asian.civiliansmod.gui.widgets;
 
 import net.asian.civiliansmod.chat.NpcChat;
+import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.CustomChatScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -20,13 +21,13 @@ public class ChatReasonEntryScrollContainer extends ElementListWidget.Entry<Chat
 
     OpenWidget openWidget;
 
-    public ChatReasonEntryScrollContainer(final NpcChat.ChatReason chatReason, List<String> strings, CustomChatScreen screen) {
+    public ChatReasonEntryScrollContainer(NPCEntity npc, final NpcChat.ChatReason chatReason, List<String> strings, CustomChatScreen screen) {
         this.chatReason = chatReason;
         for (int i = 0; i < strings.size(); i += 2) {
-            entries.add(new DialogueRowEntry(chatReason, strings.subList(i, Math.min(i + 2, strings.size())), i, screen));
+            entries.add(new DialogueRowEntry(npc, chatReason, strings.subList(i, Math.min(i + 2, strings.size())), i, screen));
         }
-        if(strings.size() % 2 == 0){
-           entries.add(new DialogueRowEntry(chatReason, new ArrayList<>(), strings.size(), screen));
+        if (strings.size() % 2 == 0) {
+            entries.add(new DialogueRowEntry(npc, chatReason, new ArrayList<>(), strings.size(), screen));
         }
         openWidget = new OpenWidget(0, 0, 10, 10, this, button -> {
             open = !open;
@@ -72,5 +73,13 @@ public class ChatReasonEntryScrollContainer extends ElementListWidget.Entry<Chat
             return true;
         }
         return false;
+    }
+
+    public void setOpen(boolean open) {
+        this.open = open;
+    }
+
+    public boolean getOpen(){
+        return open;
     }
 }

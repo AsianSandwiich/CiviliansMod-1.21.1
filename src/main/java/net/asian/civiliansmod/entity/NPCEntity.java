@@ -1,75 +1,139 @@
 package net.asian.civiliansmod.entity;
 
+import net.asian.civiliansmod.CiviliansMod;
+import net.asian.civiliansmod.chat.DefaultChat;
 import net.asian.civiliansmod.chat.NpcChat;
 import net.asian.civiliansmod.entity.goal.CustomDoorGoal;
 import net.asian.civiliansmod.gui.CustomNPCScreen;
 import net.asian.civiliansmod.gui.DefaultNPCScreen;
 import net.asian.civiliansmod.gui.SlimNPCScreen;
+import net.asian.civiliansmod.networking.payload.npc.dialogue.CilentDialogueSyncPayload;
+import net.asian.civiliansmod.networking.payload.npc.dialogue.DialogueSyncPayload;
+import net.asian.civiliansmod.networking.payload.npc.dialogue.OpenScreenDialoguesPayload;
+import net.asian.civiliansmod.networking.payload.npc.skin.ClientNpcSkinPayload;
+import net.asian.civiliansmod.networking.payload.npc.skin.SyncSkinPayload;
 import net.asian.civiliansmod.util.NPCUtil;
+import net.asian.civiliansmod.util.SkinIdentifier;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtString;
+import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
+import net.minecraft.server.network.EntityTrackerEntry;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
-import net.minecraft.client.MinecraftClient;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.function.BiConsumer;
 
 public class NPCEntity extends PathAwareEntity {
-
-    private static final TrackedData<Integer> VARIANT = DataTracker.registerData(NPCEntity.class, TrackedDataHandlerRegistry.INTEGER);
-    private static final TrackedData<Boolean> SLIM = DataTracker.registerData(NPCEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private float targetYaw = 0.0F; // The yaw to smoothly rotate towards
     private boolean isTurning = false; // Whether the NPC is currently in the process of turning
     private int lookAtPlayerTicks = 0;
     private static final TrackedData<Boolean> IS_PAUSED = DataTracker.registerData(NPCEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private int regenerationCooldown = 0;
     private static final TrackedData<Boolean> IS_FOLLOWING = DataTracker.registerData(NPCEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-    boolean bl = true;
+    int updateDialoguesTicks = 0;
 
+    //@Environment(EnvType.SERVER)
+    Set<UUID> sent;
+
+    @Environment(EnvType.CLIENT)
+    public boolean dialoguesReceived;
+
+    public NpcChatManager getChatManager() {
+        return chatManager;
+    }
+
+    public SkinManager getSkinManager() {
+        return skinManager;
+    }
+
+    public NameManager getNameManager() {
+        return nameManager;
+    }
+
+    NameManager nameManager = new NameManager(this);
+    NpcChatManager chatManager = new NpcChatManager(this);
+    SkinManager skinManager = new SkinManager(this);
+
+
+    @Override
+    public void onSpawnPacket(EntitySpawnS2CPacket packet) {
+        super.onSpawnPacket(packet);
+        SkinIdentifier skinIdentifier = NPCUtil.waitingSync.get(this.getId());
+        if(skinIdentifier != null) {
+            this.skinManager.setIdSkin(skinIdentifier);
+        }
+
+        updateDialoguesTicks = 10;
+    }
+
+    @Override
+    public Packet<ClientPlayPacketListener> createSpawnPacket(EntityTrackerEntry entityTrackerEntry) {
+        if (this.skinManager.skinByteArray == null) {
+            for (ServerPlayerEntity player : this.getWorld().getServer().getPlayerManager().getPlayerList()) {
+                ServerPlayNetworking.send(player, new SyncSkinPayload(this.getId(), this.skinManager.baseVariant));
+            }
+        } else {
+            for (ServerPlayerEntity player : this.getWorld().getServer().getPlayerManager().getPlayerList()) {
+                ServerPlayNetworking.send(player, new ClientNpcSkinPayload(this.getId(), this.skinManager.slim, this.skinManager.skinByteArray));
+            }
+        }
+        return super.createSpawnPacket(entityTrackerEntry);
+    }
 
     public NPCEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
+
+
         if (!this.getWorld().isClient) {
             // Assign default model and slim model names to the entity
-            String[] defaultModelNames = {"Charles", "Cade", "Henry", "Liam", "Rodney", "Nathaniel", "Elliot", "Julian", "Malcolm", "Tobias",
-                    "Wesley", "Felix", "Desmond", "Simon", "Miles", "Everett", "Dorian", "Quentin", "Cedric", "Adrian", "Roman", "Marcus", "Gideon", "Levi", "Jasper"};
-            String[] slimModelNames = {"Evelyn", "Sarah", "Olivia", "Emma", "Alexia", "Amelia", "Celeste", "Lillian", "Joleen", "Rosalie",
-                    "Clara", "Vivienne", "Elena", "Margot", "Nora", "Daphne", "Fiona", "Genevieve", "Juliette", "Lucille", "Naomi", "Ivy", "Serena", "Vera", "Adelaide"};
 
-
+/*
             int variant = this.random.nextInt(88);
             this.setVariant(variant);
             if (this.getVariant() <= 43) {
                 String randomName = defaultModelNames[this.random.nextInt(defaultModelNames.length)];
                 this.setCustomName(Text.literal(randomName));
-                this.setSlim(false);
-                System.out.println("Assigned 'default' name: " + randomName + " to variant: " + this.getVariant());
             } else {
                 String randomName = slimModelNames[this.random.nextInt(slimModelNames.length)];
                 this.setCustomName(Text.literal(randomName));
-                System.out.println("Assigned 'slim' name: " + randomName + " to variant: " + this.getVariant());
-                this.setSlim(true);
             }
-
+*/
             this.setCustomNameVisible(true);
+            this.sent = new HashSet<>();
+        } else {
+            this.dialoguesReceived = false;
         }
 
     }
@@ -77,35 +141,10 @@ public class NPCEntity extends PathAwareEntity {
 
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
+        this.chatManager = new NpcChatManager(this);
         super.initDataTracker(builder);
-        builder.add(VARIANT, 0);
-        builder.add(SLIM, false);
         builder.add(IS_PAUSED, false);
         builder.add(IS_FOLLOWING, false);
-    }
-
-    public void setSlim(boolean slim) {
-        this.dataTracker.set(SLIM, slim);
-    }
-
-    // Getter for the variant
-    public int getVariant() {
-        return this.dataTracker.get(VARIANT);
-    }
-
-    // Setter for the variant
-    public void setVariant(int variant) {
-        this.dataTracker.set(VARIANT, variant);
-    }
-
-    public void setCustomName(Text name) {
-        super.setCustomName(name); // Call super to update name
-        // This ensures the name change is tracked and saved
-    }
-
-    // Helper method to determine if the current variant is slim
-    public boolean isSlim() {
-        return this.dataTracker.get(SLIM);
     }
 
     @Override
@@ -129,28 +168,20 @@ public class NPCEntity extends PathAwareEntity {
         this.dataTracker.set(IS_PAUSED, paused);
     }
 
-    public Identifier getSkinTexture() {
-        return NPCUtil.getNPCTexture(getVariant());
-    }
-
     @Override
     public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
 
         // Save the variant to NBT
-        nbt.putInt("Variant", this.getVariant());
         nbt.putBoolean("IsPaused", this.isPaused());
         nbt.putBoolean("IsFollowing", this.isFollowing());
-
+        nbt.put("dialogues", chatManager.saveDialogues());
+        this.skinManager.writeNbt(nbt);
     }
 
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt); // Call parent to load standard entity data
-        if (nbt.contains("Variant")) {
-            this.setVariant(nbt.getInt("Variant")); // Load custom variant from NBT
-
-        }
         if (nbt.contains("IsPaused")) {
             this.setPaused(nbt.getBoolean("IsPaused")); // Load paused state
         }
@@ -158,6 +189,11 @@ public class NPCEntity extends PathAwareEntity {
             this.setFollowing(nbt.getBoolean("IsFollowing"));
         }
 
+        if (nbt.contains("dialogues")) {
+            this.chatManager.setFromNbt(nbt.getCompound("dialogues"));
+        }
+
+        this.skinManager.readNbt(nbt);
     }
 
     public static DefaultAttributeContainer.Builder createAttributes() {
@@ -185,9 +221,9 @@ public class NPCEntity extends PathAwareEntity {
             if (!this.getWorld().isClient()) {
                 Text nameText = this.getCustomName();
                 String npcName = nameText != null ? nameText.getString() : "NPC";
-                String hitDialogue = NpcChat.getRandomChat(NpcChat.ChatReason.HURT);
 
                 if (source.getAttacker() instanceof PlayerEntity player) {
+                    String hitDialogue = chatManager.getRandomChat(CiviliansMod.playerLanguages.get(player.getUuid()), NpcChat.ChatReason.HURT);
                     player.sendMessage(Text.literal(npcName + ": " + hitDialogue));
                 }
 
@@ -209,7 +245,7 @@ public class NPCEntity extends PathAwareEntity {
 
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
-        if (!this.getWorld().isClient()) return ActionResult.PASS;
+        System.out.println(this.getId());
 
         // Ensure the interaction is in the main hand
         if (hand == Hand.MAIN_HAND) {
@@ -227,6 +263,12 @@ public class NPCEntity extends PathAwareEntity {
 
             // Check if the player is sneaking
             if (player.isSneaking()) {
+                if (player instanceof ServerPlayerEntity serverPlayer && !hasSentTo(player.getUuid())) {
+                    markSentTo(player.getUuid());
+                    OpenScreenDialoguesPayload openScreenDialoguesPayload = new OpenScreenDialoguesPayload(this.getId(), this.chatManager.getDialogues());
+                    ServerPlayNetworking.send(serverPlayer, openScreenDialoguesPayload);
+                }
+
                 if (!this.getWorld().isClient()) {
                     // Initiate turning to face the player
                     this.getNavigation().stop();
@@ -239,8 +281,10 @@ public class NPCEntity extends PathAwareEntity {
 
                     return ActionResult.SUCCESS;
                 } else {
-                    // Open the GUI on the client side
-                    openCustomNPCScreen();
+                    if (this.dialoguesReceived) {
+                        openCustomNPCScreen();
+                    }
+
                 }
                 return ActionResult.SUCCESS; // Indicate the interaction was handled
             }
@@ -257,7 +301,7 @@ public class NPCEntity extends PathAwareEntity {
                 Text nameText = this.getCustomName();
                 String npcName = nameText != null ? nameText.getString() : "NPC";
 
-                String dialogue = NpcChat.getRandomChat(NpcChat.ChatReason.INTERACT);
+                String dialogue = chatManager.getRandomChat(CiviliansMod.playerLanguages.get(player.getUuid()), NpcChat.ChatReason.INTERACT);
                 player.sendMessage(Text.literal(npcName + ": " + dialogue));
             }
             return ActionResult.SUCCESS;
@@ -268,11 +312,11 @@ public class NPCEntity extends PathAwareEntity {
     }
 
     @Environment(EnvType.CLIENT)
-    private void openCustomNPCScreen() {
-        if (NPCUtil.hasDefaultSkin(this.getVariant())) {
-            MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this));
-        } else if (NPCUtil.hasSlimSkin(this.getVariant())) {
+    public void openCustomNPCScreen() {
+        if (skinManager.slim && skinManager.defaultSkin) {
             MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this));
+        } else if (skinManager.defaultSkin) {
+            MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this));
         } else {
             MinecraftClient.getInstance().setScreen(new CustomNPCScreen(this));
         }
@@ -291,12 +335,12 @@ public class NPCEntity extends PathAwareEntity {
 
     @Override
     public void tick() {
-        if (this.getWorld().isClient && bl) {
-            this.setSlim(NPCUtil.isSlim(this.getVariant()));
-            bl = false;
-        }
         super.tick();
-
+        if (getWorld().isClient) {
+            if (--updateDialoguesTicks == 0) {
+                ClientPlayNetworking.send(new CilentDialogueSyncPayload(this.getUuid()));
+            }
+        }
     }
 
     @Override
@@ -426,5 +470,223 @@ public class NPCEntity extends PathAwareEntity {
             degrees += 360.0F;
         }
         return degrees;
+    }
+
+    public boolean hasSentTo(UUID playerId) {
+        return sent.contains(playerId);
+    }
+
+    public void markSentTo(UUID playerId) {
+        sent.add(playerId);
+    }
+
+    public static class NpcChatManager {
+        NPCEntity npc;
+        Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues = DefaultChat.getDefaultChat();
+
+        public NpcChatManager(NPCEntity npc) {
+            this.npc = npc;
+        }
+
+        public String getRandomChat(String language, NpcChat.ChatReason chatReason) {
+            if (!dialogues.containsKey(language)) {
+                return "";
+            }
+
+            if (!dialogues.get(language).containsKey(chatReason)) {
+                return "";
+            }
+
+            List<String> chat = dialogues.get(language).get(chatReason);
+            if (chat.isEmpty()) {
+                return "";
+            }
+
+            return chat.get(Random.create().nextInt(chat.size()));
+        }
+
+        public Map<String, Map<NpcChat.ChatReason, List<String>>> getDialogues() {
+            return dialogues;
+        }
+
+        public void setDialogue(Map<String, Map<NpcChat.ChatReason, List<String>>> dialogue) {
+            this.dialogues = dialogue;
+        }
+
+        public Map<NpcChat.ChatReason, List<String>> getTranslatedDialogues(String language) {
+            if (!dialogues.containsKey(language)) {
+                return new LinkedHashMap<>();
+            }
+            return dialogues.get(language);
+        }
+
+
+        public NbtCompound saveDialogues() {
+            NbtCompound mainCompound = new NbtCompound();
+            dialogues.forEach(getManageCompoundSave(mainCompound));
+
+            return mainCompound;
+        }
+
+        public void setFromNbt(NbtCompound nbt) {
+            Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues = new HashMap<>();
+
+            for (String language : nbt.getKeys()) {
+                NbtCompound languageCompound = nbt.getCompound(language);
+                Map<NpcChat.ChatReason, List<String>> reasonToMessages = new HashMap<>();
+
+                for (String reasonName : languageCompound.getKeys()) {
+                    try {
+                        NpcChat.ChatReason reason = NpcChat.ChatReason.fromName(reasonName);
+                        NbtList messageList = languageCompound.getList(reasonName, NbtElement.STRING_TYPE);
+                        List<String> messages = new ArrayList<>();
+
+                        for (NbtElement element : messageList) {
+                            messages.add(element.asString());
+                        }
+
+                        reasonToMessages.put(reason, messages);
+                    } catch (Exception e) {
+                        CiviliansMod.LOGGER.error("Unexpected reason: " + reasonName, e);
+                    }
+                }
+
+                dialogues.put(language, reasonToMessages);
+            }
+
+            this.dialogues = dialogues;
+        }
+
+        public void markDialoguesDirty(UUID avoid) {
+            if (npc.getWorld() instanceof ServerWorld serverWorld) {
+                for (ServerPlayerEntity player : serverWorld.getPlayers()) {
+                    if (player.getUuid().equals(avoid)) continue;
+                    try {
+                        ServerPlayNetworking.send(player, new DialogueSyncPayload(npc.getId(), dialogues));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+
+
+        static @NotNull BiConsumer<String, Map<NpcChat.ChatReason, List<String>>> getManageCompoundSave(NbtCompound mainCompound) {
+            return (language, reasonToMessagesMap) -> {
+                NbtCompound languageCompound = new NbtCompound();
+
+                reasonToMessagesMap.forEach((reason, messages) -> {
+                    NbtList messageList = new NbtList();
+                    messages.forEach(message -> messageList.add(NbtString.of(message)));
+
+                    // Ajout de la liste des messages pour une raison donnée
+                    languageCompound.put(reason.getName(), messageList);
+                });
+
+                // Ajout du compound pour la langue
+                mainCompound.put(language, languageCompound);
+            };
+        }
+    }
+
+
+    public static class SkinManager {
+        byte[] skinByteArray;
+
+        SkinIdentifier skinIdentifier;
+
+        public int getBaseVariant() {
+            return baseVariant;
+        }
+
+        public void setBaseVariant(int baseVariant) {
+            this.baseVariant = baseVariant;
+        }
+
+        int baseVariant;
+
+        boolean slim;
+
+        NPCEntity npcEntity;
+
+        boolean defaultSkin;
+
+        public SkinManager(NPCEntity npcEntity) {
+            this.npcEntity = npcEntity;
+            this.defaultSkin = true;
+            this.baseVariant = npcEntity.random.nextInt(88);
+            if (baseVariant <= 43) {
+                this.slim = false;
+            } else {
+                this.slim = true;
+            }
+
+            npcEntity.nameManager.setRandomName(this.slim);
+        }
+
+        public boolean isSlim() {
+            return slim;
+        }
+
+        public byte[] getSkinByteArray() {
+            return skinByteArray;
+        }
+
+        public void setSkinByteArray(byte[] skinByteArray) {
+            this.skinByteArray = skinByteArray;
+        }
+
+        @Environment(EnvType.CLIENT)
+        public void setIdSkin(SkinIdentifier skin) {
+            this.skinIdentifier = skin;
+
+        }
+
+        @Environment(EnvType.CLIENT)
+        public SkinIdentifier getIdSkin() {
+            if (this.skinIdentifier == null) {
+                return NPCUtil.getNPCTexture(baseVariant);
+            }
+            return this.skinIdentifier;
+        }
+
+        void writeNbt(NbtCompound nbt) {
+            nbt.putInt("basevariat", baseVariant);
+            if(skinByteArray != null) {
+                nbt.putByteArray("skin", skinByteArray);
+            }
+        }
+
+        void readNbt(NbtCompound nbt) {
+            this.baseVariant = nbt.getInt("basevariat");
+            if(nbt.contains("skin")) {
+                this.skinByteArray = nbt.getByteArray("skin");
+            }
+        }
+
+        public void setSlim(boolean slim) {
+            this.slim = slim;
+        }
+    }
+
+    public static class NameManager {
+        String[] defaultModelNames = {"Charles", "Cade", "Henry", "Liam", "Rodney", "Nathaniel", "Elliot", "Julian", "Malcolm", "Tobias",
+                "Wesley", "Felix", "Desmond", "Simon", "Miles", "Everett", "Dorian", "Quentin", "Cedric", "Adrian", "Roman", "Marcus", "Gideon", "Levi", "Jasper"};
+        String[] slimModelNames = {"Evelyn", "Sarah", "Olivia", "Emma", "Alexia", "Amelia", "Celeste", "Lillian", "Joleen", "Rosalie",
+                "Clara", "Vivienne", "Elena", "Margot", "Nora", "Daphne", "Fiona", "Genevieve", "Juliette", "Lucille", "Naomi", "Ivy", "Serena", "Vera", "Adelaide"};
+
+        NPCEntity npcEntity;
+
+        public NameManager(NPCEntity npcEntity) {
+            this.npcEntity = npcEntity;
+        }
+
+        public void setRandomName(boolean slim) {
+            if (slim)
+                this.npcEntity.setCustomName(Text.literal(slimModelNames[Random.create().nextInt(slimModelNames.length)]));
+            else
+                this.npcEntity.setCustomName(Text.literal(defaultModelNames[Random.create().nextInt(defaultModelNames.length)]));
+
+        }
     }
 }

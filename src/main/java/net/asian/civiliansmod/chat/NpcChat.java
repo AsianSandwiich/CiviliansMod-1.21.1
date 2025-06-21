@@ -63,7 +63,7 @@ public class NpcChat {
         HURT("hurt"),
         INTERACT("interact");
 
-        String name;
+        final String name;
 
         ChatReason(String name) {
             this.name = name;
@@ -71,6 +71,15 @@ public class NpcChat {
 
         public String getName() {
             return this.name;
+        }
+
+        public static ChatReason fromName(String name) {
+            for (ChatReason reason : values()) {
+                if (reason.name.equalsIgnoreCase(name) || reason.name().equalsIgnoreCase(name)) {
+                    return reason;
+                }
+            }
+            throw new IllegalArgumentException("Unknown ChatReason: " + name);
         }
     }
 }

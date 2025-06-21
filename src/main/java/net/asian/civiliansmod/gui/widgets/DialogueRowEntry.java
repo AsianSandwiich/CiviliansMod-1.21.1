@@ -1,6 +1,7 @@
 package net.asian.civiliansmod.gui.widgets;
 
 import net.asian.civiliansmod.chat.NpcChat;
+import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.CustomChatScreen;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
@@ -13,17 +14,17 @@ import java.util.List;
 public class DialogueRowEntry extends ElementListWidget.Entry<DialogueRowEntry> {
     List<AbstractDialogueEntry> dialogueEntryList = new ArrayList<>();
 
-    public DialogueRowEntry(NpcChat.ChatReason chatReason, List<String> strings, int base, CustomChatScreen screen) {
+    public DialogueRowEntry(NPCEntity npc, NpcChat.ChatReason chatReason, List<String> strings, int base, CustomChatScreen screen) {
         int i = 0;
         strings.forEach(s -> {
-            dialogueEntryList.add(new DialogueEntry(0, 0, 112, 12, chatReason, screen, s, base + i));
+            dialogueEntryList.add(new DialogueEntry( npc,0, 0, 112, 12, chatReason, screen, s, base + i));
         });
 
         if (strings.isEmpty()) {
-            dialogueEntryList.add(new AddDialogueEntry(0, 0, 112, 12, chatReason, screen));
+            dialogueEntryList.add(new AddDialogueEntry(npc,0, 0, 112, 12, chatReason, screen));
         }
         if (strings.size() == 1) {
-            dialogueEntryList.add(new AddDialogueEntry(0, 0, 112, 12, chatReason, screen));
+            dialogueEntryList.add(new AddDialogueEntry(npc,0, 0, 112, 12, chatReason, screen));
         }
     }
 

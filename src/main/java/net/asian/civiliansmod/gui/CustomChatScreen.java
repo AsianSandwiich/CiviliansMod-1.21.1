@@ -1,6 +1,7 @@
 package net.asian.civiliansmod.gui;
 
 import net.asian.civiliansmod.entity.NPCEntity;
+import net.asian.civiliansmod.gui.widgets.ChatReasonEntryScrollContainer;
 import net.asian.civiliansmod.gui.widgets.GlobalChatScrollWidget;
 import net.asian.civiliansmod.util.DebugUtil;
 import net.minecraft.client.MinecraftClient;
@@ -8,12 +9,15 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class CustomChatScreen extends AbstractConfigScreen {
     GlobalChatScrollWidget chatScrollWidget;
 
     public CustomChatScreen(NPCEntity npc) {
         super(npc, Text.of("civilians.gui.chat_title"));
-        chatScrollWidget = new GlobalChatScrollWidget(MinecraftClient.getInstance(), 236, 134, 0, 0, 10, this);
+        chatScrollWidget = new GlobalChatScrollWidget(npc, MinecraftClient.getInstance(), 236, 134, 0, 0, 10, this);
     }
 
 
@@ -27,10 +31,24 @@ public class CustomChatScreen extends AbstractConfigScreen {
         this.addDrawableChild(chatScrollWidget);
     }
 
-    public void fullInit(){
+    public void fullInit() {
         int x = width / 2;
         int y = height / 2;
-        chatScrollWidget = new GlobalChatScrollWidget(MinecraftClient.getInstance(), 236, 134, x - 114, y - 60, 10, this);
+        List<Boolean> openList = new ArrayList<>();
+        double offsetY = chatScrollWidget.getScrollAmount();
+        chatScrollWidget.children().forEach(chatReasonEntryScrollContainer -> {
+            openList.add(chatReasonEntryScrollContainer.getOpen());
+        });
+
+        chatScrollWidget = new GlobalChatScrollWidget(npc, MinecraftClient.getInstance(), 236, 134, x - 114, y - 60, 10, this);
+        chatScrollWidget.setScrollAmount(Math.min(offsetY, chatScrollWidget.getMaxScroll()));
+        chatScrollWidget.refreshScroll();
+
+        for(int i = 0; i<chatScrollWidget.children().size(); i++ ) {
+            ChatReasonEntryScrollContainer container = chatScrollWidget.children().get(i);
+            boolean open = openList.get(i);
+            container.setOpen(open);
+        }
         this.addDrawableChild(chatScrollWidget);
         super.init();
     }
@@ -38,12 +56,11 @@ public class CustomChatScreen extends AbstractConfigScreen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
-        DebugUtil.drawMouseInfo(context, width, height, mouseX, mouseY);
-
     }
 
     @Override
     public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+        super.renderBackground(context, mouseX, mouseY, delta);
         int x = width / 2;
         int y = height / 2;
         Identifier guiTexture = Identifier.of("civiliansmod", "textures/gui/chat_gui.png");

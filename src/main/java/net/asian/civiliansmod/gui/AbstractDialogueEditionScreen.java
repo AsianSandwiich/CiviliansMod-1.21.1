@@ -2,6 +2,7 @@ package net.asian.civiliansmod.gui;
 
 import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.chat.NpcChat;
+import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.widgets.TextButtonWidget;
 import net.asian.civiliansmod.mixin.TextFieldWidgetAccessor;
 import net.minecraft.client.MinecraftClient;
@@ -16,9 +17,11 @@ public class AbstractDialogueEditionScreen extends Screen {
     TextFieldWidget textFieldWidget;
     CustomChatScreen parent;
     NpcChat.ChatReason reason;
+    NPCEntity npc;
 
-    protected AbstractDialogueEditionScreen(String text, NpcChat.ChatReason reason, CustomChatScreen parent) {
+    protected AbstractDialogueEditionScreen(NPCEntity npc, String text, NpcChat.ChatReason reason, CustomChatScreen parent) {
         super(Text.literal("dialoguescreen"));
+        this.npc = npc;
         this.text = text;
         this.parent = parent;
         this.reason = reason;

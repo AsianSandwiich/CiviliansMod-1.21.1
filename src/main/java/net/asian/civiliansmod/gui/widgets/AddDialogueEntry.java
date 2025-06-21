@@ -2,6 +2,7 @@ package net.asian.civiliansmod.gui.widgets;
 
 import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.chat.NpcChat;
+import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.AddDialogueScreen;
 import net.asian.civiliansmod.gui.CustomChatScreen;
 import net.minecraft.client.MinecraftClient;
@@ -11,9 +12,9 @@ import net.minecraft.util.Identifier;
 public class AddDialogueEntry extends AbstractDialogueEntry {
     Identifier TEXTURE = Identifier.of(CiviliansMod.MOD_ID, "textures/gui/add_button.png");
 
-    protected AddDialogueEntry(int x, int y, int width, int height, NpcChat.ChatReason chatReason, CustomChatScreen screen) {
+    protected AddDialogueEntry(NPCEntity npc, int x, int y, int width, int height, NpcChat.ChatReason chatReason, CustomChatScreen screen) {
         super(x, y, width, height, chatReason, button -> {
-            MinecraftClient.getInstance().setScreen(new AddDialogueScreen("", chatReason, screen));
+            MinecraftClient.getInstance().setScreen(new AddDialogueScreen(npc, "", chatReason, screen));
         });
     }
 

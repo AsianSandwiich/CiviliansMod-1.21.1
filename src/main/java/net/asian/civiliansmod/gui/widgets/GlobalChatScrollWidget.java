@@ -2,6 +2,7 @@ package net.asian.civiliansmod.gui.widgets;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.asian.civiliansmod.chat.NpcChat;
+import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.CustomChatScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -9,10 +10,10 @@ import net.minecraft.client.gui.widget.ElementListWidget;
 import net.minecraft.util.math.MathHelper;
 
 public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScrollContainer> {
-    public GlobalChatScrollWidget(MinecraftClient minecraftClient, int width, int height, int x, int y, int itemHeight, CustomChatScreen screen) {
+    public GlobalChatScrollWidget(NPCEntity npc, MinecraftClient minecraftClient, int width, int height, int x, int y, int itemHeight, CustomChatScreen screen) {
         super(minecraftClient, width, height, y, itemHeight);
-        NpcChat.dialogues.forEach((chatReason, strings) -> {
-            this.children().add(new ChatReasonEntryScrollContainer(chatReason, strings, screen));
+        npc.getChatManager().getTranslatedDialogues(minecraftClient.getLanguageManager().getLanguage()).forEach((chatReason, strings) -> {
+            this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen));
         });
 
         this.setRenderHeader(false, 0);

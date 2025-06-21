@@ -1,9 +1,12 @@
 package net.asian.civiliansmod.gui.widgets;
 
 import net.asian.civiliansmod.chat.NpcChat;
+import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.ConfirmScreen;
 import net.asian.civiliansmod.gui.CustomChatScreen;
 import net.asian.civiliansmod.gui.EditDialogueScreen;
+import net.asian.civiliansmod.networking.payload.npc.dialogue.RemoveDialoguePayload;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.MultilineText;
 import net.minecraft.client.gui.DrawContext;
@@ -16,14 +19,17 @@ public class DialogueEntry extends AbstractDialogueEntry {
     String dialogue;
     int index;
 
-    protected DialogueEntry(int x, int y, int width, int height, NpcChat.ChatReason chatReason, CustomChatScreen screen, String dialogue, int index) {
+    protected DialogueEntry(NPCEntity npc, int x, int y, int width, int height, NpcChat.ChatReason chatReason, CustomChatScreen screen, String dialogue, int index) {
         super(x, y, width, height, chatReason, button -> {
-            EditDialogueScreen editScreen= new EditDialogueScreen(dialogue, chatReason, index, screen);
+            EditDialogueScreen editScreen = new EditDialogueScreen(npc, dialogue, chatReason, index, screen);
             MinecraftClient.getInstance().setScreen(editScreen);
         });
         deleteWidget = new DeleteWidget(x + 40, y, 10, 10, button -> {
             ConfirmScreen confirmScreen = new ConfirmScreen(screen, button1 -> {
-                NpcChat.dialogues.computeIfAbsent(chatReason, (o) -> new ArrayList<>()).remove(dialogue);
+                String language = MinecraftClient.getInstance().getLanguageManager().getLanguage();
+                npc.getChatManager().getTranslatedDialogues(language).computeIfAbsent(chatReason, (o) -> new ArrayList<>()).remove(dialogue);
+                RemoveDialoguePayload payload = new RemoveDialoguePayload(npc.getUuid(), language, chatReason.toString(), dialogue);
+                ClientPlayNetworking.send(payload);
                 screen.fullInit();
                 MinecraftClient.getInstance().setScreen(screen);
             }, button1 -> {
