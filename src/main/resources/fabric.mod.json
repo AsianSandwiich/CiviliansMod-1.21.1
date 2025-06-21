@@ -27,6 +27,9 @@
     "minecraft": "1.21.1",
     "fabric-api": ">=0.115.0+1.21.1"
   },
+  "mixins": [
+    "civiliansmod.mixins.json"
+  ],
   "custom": {
     "modmenu": {
       "description": "A client and server side Minecraft mod introducing civilians.",

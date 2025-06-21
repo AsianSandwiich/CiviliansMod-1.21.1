@@ -1,12 +1,15 @@
 package net.asian.civiliansmod.gui;
 
 import net.asian.civiliansmod.entity.NPCEntity;
+import net.asian.civiliansmod.networking.payload.npc.skin.ChangeBaseSkinPayload;
+import net.asian.civiliansmod.networking.payload.npc.skin.ChangeSkinPayload;
 import net.asian.civiliansmod.networking.NPCDataPayload;
+import net.asian.civiliansmod.networking.payload.npc.skin.SyncSkinPayload;
 import net.asian.civiliansmod.util.NPCUtil;
+import net.asian.civiliansmod.util.SkinIdentifier;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
@@ -21,7 +24,10 @@ import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.Entity;
 import net.asian.civiliansmod.custom_skins.SkinFolderManager;
 
-public abstract class AbstratcNPCScreen extends Screen {
+import java.util.ArrayList;
+import java.util.List;
+
+public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
     private final NPCEntity npc;
 
     // Layout constants
@@ -30,6 +36,7 @@ public abstract class AbstratcNPCScreen extends Screen {
     private static final int COLUMN_WIDTH = 130;
     private int defaultSkin;
     private int selectedVariant; // No variant is selected by default
+    private int selectedVariantIndex = -1; // No variant is selected by default
     private int scrollOffset = 0;  // Current scroll offset
     private int maxScrollOffset;  // Maximum allowed scroll offset
     private boolean isScrolling = false; // True if currently dragging the scrollbar
@@ -46,27 +53,35 @@ public abstract class AbstratcNPCScreen extends Screen {
      */
     boolean save = false;
 
-    /**
-     * represents the start and end indexes of the {@code List<Identifier>} defined under {@link NPCUtil} that represents the skins.
-     */
-    int[] indexes = new int[2];
     int startVariantIndex = 0;
+
+    List<Integer> toRender = new ArrayList<>();
 
 
     public AbstratcNPCScreen(NPCEntity npc) {
-        this(npc, -1, npc.getVariant());
+        this(npc, -1, NPCUtil.getSkins().indexOf(npc.getSkinManager().getIdSkin()));
     }
 
     public AbstratcNPCScreen(NPCEntity npc, int selected, int defaultSkin) {
-        super(Text.literal("Change NPC Variant"));
+        super(npc, Text.literal("Change NPC Variant"));
         this.npc = npc;
-        this.originalVariant = npc.getVariant(); // Save the current variant to initialize the preview
         this.selectedVariant = selected;
-        indexes = getStartAndEndIndexes();
+        toRender = getSkinsToRender();
+        this.originalVariant = NPCUtil.getSkins().indexOf(npc.getSkinManager().getIdSkin()); // Save the current variant to initialize the preview
         this.defaultSkin = defaultSkin;
     }
 
-    protected abstract int[] getStartAndEndIndexes();
+    public AbstratcNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex) {
+        super(npc, Text.literal("Change NPC Variant"));
+        this.npc = npc;
+        this.selectedVariant = selected;
+        toRender = getSkinsToRender();
+        this.selectedVariantIndex = selectedVariantIndex;
+        this.originalVariant = NPCUtil.getSkins().indexOf(npc.getSkinManager().getIdSkin()); // Save the current variant to initialize the preview
+        this.defaultSkin = defaultSkin;
+    }
+
+    protected abstract List<Integer> getSkinsToRender();
 
 
     @Override
@@ -80,7 +95,7 @@ public abstract class AbstratcNPCScreen extends Screen {
         int containerY = (this.height - containerHeight) / 2;
 
         // Total rows and visible rows calculation
-        int totalRows = (int) Math.ceil(((double) (indexes[1] - indexes[0]) / 3)); // Total number of rows
+        int totalRows = (int) Math.ceil(((double) (toRender.size()) / 3)); // Total number of rows
         int visibleRows = (containerHeight - 55) / ENTITY_SPACING; // Adjust relative to the container height
 
 
@@ -95,7 +110,6 @@ public abstract class AbstratcNPCScreen extends Screen {
         this.scrollbarHeight = 15;
         this.scrollbarY = containerY + 40 + (int) ((float) this.scrollOffset / this.maxScrollOffset * (scrollBarTotalHeight - this.scrollbarHeight));
     }
-
 
     private void drawMainContainer(DrawContext context) {
         // Texture Identifier moved here
@@ -145,10 +159,6 @@ public abstract class AbstratcNPCScreen extends Screen {
         }
     }
 
-    protected void renitIndexes() {
-        indexes = getStartAndEndIndexes();
-    }
-
     @Override
     protected void init() {
         super.init();
@@ -159,21 +169,19 @@ public abstract class AbstratcNPCScreen extends Screen {
         int containerY = (this.height - containerHeight) / 2;
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Wide"),
-                button -> MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this.npc, this.selectedVariant, defaultSkin))
+                button -> MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex))
         ).dimensions(containerX + 82, containerY + 22, 39, 12).build());
 
         // Add Slim tab button
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Slim"),
-                button -> MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this.npc, this.selectedVariant, defaultSkin))
+                button -> MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex))
         ).dimensions(containerX + 121, containerY + 22, 40, 12).build());
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Custom"),
-                button -> MinecraftClient.getInstance().setScreen(new CustomNPCScreen(this.npc, this.selectedVariant, defaultSkin))
+                button -> MinecraftClient.getInstance().setScreen(new CustomNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex))
         ).dimensions(containerX + 161, containerY + 22, 39, 12).build());
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Save"), button -> {
-            if (this.selectedVariant != -1)
-                npc.setSlim(NPCUtil.isSlim(this.selectedVariant));
             save = true;
             this.close();
             scrollOffset = 0;
@@ -186,7 +194,7 @@ public abstract class AbstratcNPCScreen extends Screen {
         this.addDrawableChild(upslimButton);
 
         this.updefaultButton = ButtonWidget.builder(Text.literal("↑Wide"), button ->
-                        SkinFolderManager.openFolder(SkinFolderManager.NPCModel.DEFAULT)) // Pass "default", not "civiliansmod_skins_default"
+                        SkinFolderManager.openFolder(SkinFolderManager.NPCModel.WIDE)) // Pass "default", not "civiliansmod_skins_default"
                 .dimensions(containerX + 202, containerY + containerHeight - 66, 49, 20).build();
         this.addDrawableChild(updefaultButton);
 
@@ -230,17 +238,31 @@ public abstract class AbstratcNPCScreen extends Screen {
 
     @Override
     public void close() {
-        if (!save)
-            npc.setVariant(this.defaultSkin);
         if (MinecraftClient.getInstance().player != null) {
+            if (!save) {
+                super.close();
+                return;
+            }
+
             NPCDataPayload payload = new NPCDataPayload(
                     npc.getUuid(),
                     nameInputField.getText(),
-                    npc.getVariant(),
                     npc.isPaused(), // Add paused state
                     npc.isFollowing()
             );
             ClientPlayNetworking.send(payload); // Send data to the server
+
+            if (npc.getSkinManager().getIdSkin().custom()) {
+                ChangeSkinPayload payload1 = new ChangeSkinPayload(npc.getUuid(), npc.getSkinManager().getIdSkin().slim(), npc.getSkinManager().getIdSkin());
+                ClientPlayNetworking.send(payload1); // Send data to the server
+            } else {
+                if (selectedVariantIndex == -1) {
+                    super.close();
+                    return;
+                }
+                ChangeBaseSkinPayload payload1 = new ChangeBaseSkinPayload(npc.getUuid(), selectedVariantIndex);
+                ClientPlayNetworking.send(payload1);
+            }
         }
 
         super.close();
@@ -287,7 +309,12 @@ public abstract class AbstratcNPCScreen extends Screen {
 
             if (clickedVariant != -1) {
                 this.selectedVariant = clickedVariant;
-                this.npc.setVariant(clickedVariant); // Update NPC variant immediately
+                if (clickedVariant < toRender.size())
+                    this.selectedVariantIndex = toRender.get(clickedVariant);
+                this.npc.getSkinManager().setIdSkin(NPCUtil.getNPCTexture(selectedVariantIndex)); // Update NPC variant immediately
+
+                if (!NPCUtil.getNPCTexture(clickedVariant).custom())
+                    this.npc.getSkinManager().setBaseVariant(selectedVariantIndex);
 
                 npc.writeCustomDataToNbt(npc.writeNbt(new NbtCompound())); // Save changes to ensure they persist
             }
@@ -314,7 +341,7 @@ public abstract class AbstratcNPCScreen extends Screen {
 
         /// In the case where the number of skins to diplay is less than the number that the box can contain.
         /// To avoid any issue, we introduce a minIndex
-        int minIndex = Math.min(this.indexes[1] - this.indexes[0] - this.startVariantIndex, 9);
+        int minIndex = Math.min(toRender.size() - this.startVariantIndex, 9);
 
         // Loop through all rendered variants
         for (int i = 0; i <= minIndex; i++) {
@@ -335,7 +362,7 @@ public abstract class AbstratcNPCScreen extends Screen {
             // Check if the mouse position falls within the variant's hover box
             if (mouseX >= xPosition && mouseX <= xPosition + columnWidth &&
                     mouseY >= yPosition && mouseY <= yPosition + ENTITY_SPACING) {
-                return this.startVariantIndex + i + this.indexes[0]; // Return the clicked variant index
+                return this.startVariantIndex + i; // Return the clicked variant index
             }
         }
 
@@ -345,10 +372,17 @@ public abstract class AbstratcNPCScreen extends Screen {
 
     private void renderCenterPreview(DrawContext context, int mouseX, int mouseY) {
         // Determine which skin/variant to preview
-        int variantToRender = (selectedVariant == -1) ? originalVariant : selectedVariant;
+        int variantToRender = (selectedVariantIndex == -1) ? originalVariant : selectedVariantIndex;
 
         // Create the preview NPC entity with the selected skin/variant
-        NPCEntity previewNPC = createPreviewNPC(variantToRender);
+        //TODO fix
+
+        NPCEntity previewNPC;
+        if (originalVariant == -1) {
+            previewNPC = createBaseCenterPreviewNPC();
+        } else {
+            previewNPC = createCenterPreviewNPC(variantToRender);
+        }
 
         // GUI size and position
         int guiWidth = 256;
@@ -445,11 +479,11 @@ public abstract class AbstratcNPCScreen extends Screen {
         int columnWidth = (COLUMN_WIDTH / 3) - 10; // Reduced width to bring columns closer
         int columnOffset = 6; // Fine-tune additional space between columns
 
-        int minIndex = Math.min(this.indexes[1] - this.indexes[0] - this.startVariantIndex, 6);
-        for (int i = startVariantIndex + this.indexes[0]; i <= this.startVariantIndex + indexes[0] + minIndex; i++) {
+        int minIndex = Math.min(toRender.size() - this.startVariantIndex, 6);
+        for (int i = startVariantIndex; i < this.startVariantIndex + minIndex; i++) {
             // Compute the row and column positions for each variant
-            int rowIndex = (i - startVariantIndex - this.indexes[0]) / 3; // Divide into groups of 3 per row
-            int columnIndex = (i - startVariantIndex - this.indexes[0]) % 3; // Determine which column the model is in
+            int rowIndex = (i - startVariantIndex) / 3; // Divide into groups of 3 per row
+            int columnIndex = (i - startVariantIndex) % 3; // Determine which column the model is in
             int xPosition = panelX + columnIndex * (columnWidth + columnOffset); // Adjust horizontal position
             int yPosition = startY + rowIndex * ENTITY_SPACING; // Adjust vertical position
             // Render the model for the current variant
@@ -516,10 +550,41 @@ public abstract class AbstratcNPCScreen extends Screen {
         NPCEntity previewNPC = new NPCEntity((EntityType<? extends PathAwareEntity>) npc.getType(), world);
 
         //we set the slim variant
-        previewNPC.setSlim(NPCUtil.isSlim(variantIndex));
+        previewNPC.getSkinManager().setIdSkin(NPCUtil.getNPCTexture(toRender.get(variantIndex)));
 
+        // These properties disable animations and sounds during preview
+        previewNPC.setAiDisabled(true);
+        previewNPC.setSilent(true);
+        previewNPC.setHeadYaw(0.0F);
 
-        previewNPC.setVariant(variantIndex);
+        return previewNPC;
+    }
+
+    private NPCEntity createCenterPreviewNPC(int skinId) {
+        World world = MinecraftClient.getInstance().world;
+
+        @SuppressWarnings("unchecked")// Create a new preview NPC
+        NPCEntity previewNPC = new NPCEntity((EntityType<? extends PathAwareEntity>) npc.getType(), world);
+
+        //we set the slim variant
+        previewNPC.getSkinManager().setIdSkin(NPCUtil.getNPCTexture(skinId));
+
+        // These properties disable animations and sounds during preview
+        previewNPC.setAiDisabled(true);
+        previewNPC.setSilent(true);
+        previewNPC.setHeadYaw(0.0F);
+
+        return previewNPC;
+    }
+
+    private NPCEntity createBaseCenterPreviewNPC() {
+        World world = MinecraftClient.getInstance().world;
+
+        @SuppressWarnings("unchecked")// Create a new preview NPC
+        NPCEntity previewNPC = new NPCEntity((EntityType<? extends PathAwareEntity>) npc.getType(), world);
+
+        //we set the slim variant
+        previewNPC.getSkinManager().setIdSkin(npc.getSkinManager().getIdSkin());
 
         // These properties disable animations and sounds during preview
         previewNPC.setAiDisabled(true);

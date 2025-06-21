@@ -2,6 +2,7 @@ package net.asian.civiliansmod.renderer;
 
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.model.NPCModel;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.MobEntityRenderer;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.model.EntityModelLayer;
@@ -34,7 +35,7 @@ public class NPCRenderer extends MobEntityRenderer<NPCEntity, NPCModel<NPCEntity
      */
     @Override
     public Identifier getTexture(NPCEntity entity) {
-        return entity.getSkinTexture();
+        return entity.getSkinManager().getIdSkin().id();
     }
 
     /**
@@ -46,10 +47,12 @@ public class NPCRenderer extends MobEntityRenderer<NPCEntity, NPCModel<NPCEntity
             float entityYaw,
             float partialTicks,
             MatrixStack matrices,
-            net.minecraft.client.render.VertexConsumerProvider vertexConsumers,
+            VertexConsumerProvider vertexConsumers,
             int light) {
         // Determine the model to use based on variant (slim = variants 3–5)
-        this.model = entity.isSlim() ? slimModel : defaultModel;
+        this.model = entity.getSkinManager().getIdSkin().slim() ? slimModel : defaultModel;
+
+
 
         // Render the entity using the selected model
         super.render(entity, entityYaw, partialTicks, matrices, vertexConsumers, light);
