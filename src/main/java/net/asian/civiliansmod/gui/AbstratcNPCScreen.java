@@ -240,6 +240,7 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
     public void close() {
         if (MinecraftClient.getInstance().player != null) {
             if (!save) {
+                npc.getSkinManager().setIdSkin(NPCUtil.getNPCTexture(this.defaultSkin));
                 super.close();
                 return;
             }
