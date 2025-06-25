@@ -105,7 +105,7 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
 
         return modelData;
     }
-  
+
     public void setAngles(NPCRenderState playerEntityRenderState) {
         boolean bl = !playerEntityRenderState.spectator;
         this.body.visible = bl;
