@@ -155,6 +155,11 @@ public class NPCModel<T extends LivingEntity> extends PlayerEntityModel<T> {
                         .cuboid(-4.0F, 0.0F, -2.0F, 8.0F, 12.0F, 4.0F, new Dilation(0.25F)),
                 ModelTransform.pivot(0.0F, 0.0F, 0.0F)
         );
+        root.addChild(
+                "mouth",
+                ModelPartBuilder.create(),
+                ModelTransform.pivot(0.0F, 0.0F, 0.0F)
+        );
 
         return TexturedModelData.of(modelData, 64, 64);
     }
