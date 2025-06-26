@@ -12,6 +12,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.nbt.NbtCompound;
@@ -124,7 +125,18 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         int containerY = (this.height - containerHeight) / 2;
 
         // Draw the container texture (centered)
-        context.drawTexture(guiTexture, containerX, containerY, 0, 0, containerWidth, containerHeight, containerWidth, containerHeight);
+        context.drawTexture(
+                RenderLayer::getGuiTextured,   // Specify the render layer function
+                guiTexture,             // Texture Identifier
+                containerX,             // X position
+                containerY,             // Y position
+                0,                      // U coordinate of the texture
+                0,                      // V coordinate of the texture
+                containerWidth,         // Width of the region to draw
+                containerHeight,        // Height of the region to draw
+                containerWidth,         // Width of the texture
+                containerHeight         // Height of the texture
+        );
     }
 
     @Override
@@ -338,6 +350,7 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         if (mouseY < containerY || mouseY > containerY + containerHeight) {
             return -1; // Mouse click is entirely outside the vertical container area
         }
+
 
 
         /// In the case where the number of skins to diplay is less than the number that the box can contain.
@@ -614,8 +627,7 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
 
         dispatcher.render(
                 entity,
-                0.0, // X position in world space
-                0.0, // Y position in world space
+                0.0,// Y position in world space
                 0.0, // Z position in world space
                 0.0F, // No head yaw
                 1.0F, // Partial tick (unused in GUI)

@@ -33,6 +33,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+<<<<<<< 1.21.1
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
@@ -41,6 +42,8 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.server.network.EntityTrackerEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
+=======
+>>>>>>> 1.21.4
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -198,8 +201,8 @@ public class NPCEntity extends PathAwareEntity {
 
     public static DefaultAttributeContainer.Builder createAttributes() {
         return PathAwareEntity.createMobAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 20.0) // 20HP
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.3); // Normal speed
+                .add(EntityAttributes.MAX_HEALTH, 20.0) // 20HP
+                .add(EntityAttributes.MOVEMENT_SPEED, 0.3); // Adjusted speed
     }
 
     @Override
@@ -211,36 +214,66 @@ public class NPCEntity extends PathAwareEntity {
     }
 
     @Override
-    public boolean damage(DamageSource source, float amount) {
+    public boolean damage(ServerWorld world, DamageSource source, float amount) {
+        // Check if the entity is in a "paused" state (custom logic)
         if (isPaused()) {
-            return false; // Disallow damage and stop further logic if in "Stay" mode
+            return false; // Prevent damage and stop further processing
         }
-        boolean hurt = super.damage(source, amount);
 
+        // Call the new `super.damage` method with the correct parameters
+        boolean hurt = super.damage(world, source, amount);
+
+        // If the entity was damaged and there is an attacker
         if (hurt && source.getAttacker() != null) {
-            if (!this.getWorld().isClient()) {
+            if (!world.isClient()) {
                 Text nameText = this.getCustomName();
-                String npcName = nameText != null ? nameText.getString() : "NPC";
+                String npcName = (nameText != null) ? nameText.getString() : "NPC";
 
+<<<<<<< 1.21.1
                 if (source.getAttacker() instanceof PlayerEntity player) {
                     String hitDialogue = chatManager.getRandomChat(CiviliansMod.playerLanguages.get(player.getUuid()), NpcChat.ChatReason.HURT);
                     player.sendMessage(Text.literal(npcName + ": " + hitDialogue));
+=======
+                // Define random hit dialogues
+                String[] hitDialogues = {
+                        "Ouch! That hurt!",
+                        "Hey, watch it!",
+                        "Why would you do that?!",
+                        "Stop hitting me!",
+                        "What’s wrong with you?",
+                        "Please, don’t hurt me!",
+                        "What have I done to deserve this?!",
+                        "Fight me fair and square!",
+                        "Watch it pal, you don't know who you're messing with.",
+                        "Ow!",
+                        "@$%#&!!"
+                };
+
+                // Pick a random dialogue
+                String hitDialogue = hitDialogues[this.random.nextInt(hitDialogues.length)];
+
+                // Send a message to the attacking player
+                if (source.getAttacker() instanceof PlayerEntity player) {
+                    player.sendMessage(Text.literal(npcName + ": " + hitDialogue), false);
+>>>>>>> 1.21.4
                 }
 
+                // Define flee behavior: Calculate direction vector for fleeing
                 double dx = this.getX() - source.getAttacker().getX();
                 double dz = this.getZ() - source.getAttacker().getZ();
                 double fleeDistance = 12.0;
 
+                // Start moving the entity away from the attacker
                 this.getNavigation().startMovingTo(
                         this.getX() + dx * fleeDistance,
                         this.getY(),
                         this.getZ() + dz * fleeDistance,
-                        1.2
+                        1.2 // Movement speed when fleeing
                 );
             }
         }
 
-        return hurt;
+        return hurt; // Return whether the entity was successfully damaged
     }
 
     @Override
@@ -277,7 +310,7 @@ public class NPCEntity extends PathAwareEntity {
                     double dz = player.getZ() - this.getZ();
                     targetYaw = (float) (Math.atan2(dz, dx) * (180F / Math.PI)) - 90F;
                     isTurning = true;
-                    this.lookAtPlayerTicks = 170; // NPC will look at the player for 5 seconds (170 ticks)
+                    this.lookAtPlayerTicks = 170;
 
                     return ActionResult.SUCCESS;
                 } else {
@@ -301,8 +334,44 @@ public class NPCEntity extends PathAwareEntity {
                 Text nameText = this.getCustomName();
                 String npcName = nameText != null ? nameText.getString() : "NPC";
 
+<<<<<<< 1.21.1
                 String dialogue = chatManager.getRandomChat(CiviliansMod.playerLanguages.get(player.getUuid()), NpcChat.ChatReason.INTERACT);
                 player.sendMessage(Text.literal(npcName + ": " + dialogue));
+=======
+                String[] dialogues = {
+                        "Hello there, traveler! How can I help you?",
+                        "I hope you're enjoying the day.",
+                        "Stay safe—the world is dangerous.",
+                        "There's treasure hidden nearby... or so I've heard.",
+                        "Don't forget to stay out of trouble!",
+                        "I'm here to help you, traveler.",
+                        "What can I do for you?",
+                        "I'm so hungry... Got any spare food?",
+                        "I need to get my eyes checked, everything looks pixelated!",
+                        "Sometimes it feels like I'm in a dream. I'm not sure what to do.",
+                        "Hey! Can I help you something traveler?",
+                        "Some would say the world is flat... can you believe that?",
+                        "I don't have time to talk right now, I'm sorry!",
+                        "Wow you look totally awesome, I might copy your look!",
+                        "I need to find the hidden treasure, rumors have it that it's somewhere around here.",
+                        "I love this place, it's a lot of fun to be here!",
+                        "I hope someone got rid of that scary dragon... I'm sure it's not here anymore.",
+                        "Want to go hunting with me?",
+                        "Have you seen my friend? He's a little bit of a troublemaker.",
+                        "Hopefully this place doesn't get too crowded...",
+                        "I am surprised to see there are not more people here...",
+                        "I'm so happy to see you, traveler!",
+                        "When the birds sing, I can't help but sing along too.",
+                        "I feel this unforgiving anger built up in my body! MUST... MUST... STOP!",
+                        "Oop! Excuse me, let me just squeeze past ya",
+                        "Darkness consumes me...",
+                        "I AM SO HAPPY TO SEE YOU AGAIN! I LOVE YOU!",
+                        "Hey, you're doing great"
+                };
+
+                String dialogue = dialogues[this.random.nextInt(dialogues.length)];
+                player.sendMessage(Text.literal(npcName + ": " + dialogue), false);
+>>>>>>> 1.21.4
             }
             return ActionResult.SUCCESS;
         }
@@ -335,6 +404,13 @@ public class NPCEntity extends PathAwareEntity {
 
     @Override
     public void tick() {
+<<<<<<< 1.21.1
+=======
+        if(bl && this.getWorld().isClient){
+            this.setSlim(NPCUtil.isSlim(this.getVariant()));
+            bl = false;
+        }
+>>>>>>> 1.21.4
         super.tick();
         if (getWorld().isClient) {
             if (--updateDialoguesTicks == 0) {

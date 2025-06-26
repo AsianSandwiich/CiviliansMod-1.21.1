@@ -2,14 +2,17 @@
   "schemaVersion": 1,
   "id": "civiliansmod",
   "name": "Civilians Mod",
-  "version": "1.1.1",
+  "version": "1.2",
   "description": "A client and server side Minecraft mod introducing civilians.",
   "icon": "assets/civiliansmod/icon.png",
   "authors": [
     "AsianSandwiich"
   ],
+  "contributors": [
+    "RodoFire"
+  ],
   "contact": {
-    "homepage": "https://modrinth.com/mod/civiliansmod",
+    "homepage": "https://modrinth.com/mod/civilians",
     "sources": "https://github.com/AsianSandwiich/CiviliansMod-1.21.1"
   },
   "license": "MIT",
@@ -23,9 +26,15 @@
     ]
   },
   "depends": {
+<<<<<<< 1.21.1
     "fabricloader": ">=0.16.9",
     "minecraft": "1.21.1",
     "fabric-api": ">=0.115.0+1.21.1"
+=======
+    "fabricloader": ">=0.16.10",
+    "minecraft": "1.21.4",
+    "fabric-api": ">=0.115.1+1.21.4"
+>>>>>>> 1.21.4
   },
   "mixins": [
     "civiliansmod.mixins.json"
@@ -37,8 +46,7 @@
         "client and server"
       ],
       "links": {
-        "modmenu.modrinth": "https://modrinth.com/mod/civiliansmod"
-
+        "modmenu.modrinth": "https://modrinth.com/mod/civilians"
       },
       "update_checker": true
     }

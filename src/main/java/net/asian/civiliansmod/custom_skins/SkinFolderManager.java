@@ -32,6 +32,10 @@ public class SkinFolderManager {
         }
     }
 
+    public static void register(){
+
+    }
+
     public enum NPCModel {
         SLIM,
         WIDE
