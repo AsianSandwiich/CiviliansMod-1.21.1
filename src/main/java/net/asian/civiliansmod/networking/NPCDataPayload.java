@@ -14,16 +14,21 @@ import net.minecraft.text.Text;
 
 import java.util.UUID;
 
-public record NPCDataPayload(UUID entityUuid, String customName, int variant, boolean isPaused, boolean isFollowing) implements CustomPayload {
+public record NPCDataPayload(UUID entityUuid, String customName, boolean isPaused, boolean isFollowing) implements CustomPayload {
     public static final CustomPayload.Id<NPCDataPayload> ID = new CustomPayload.Id<>(Identifier.of(CiviliansMod.MOD_ID, "npc_data"));
 
     // Updated codec with isFollowing field
     public static final PacketCodec<RegistryByteBuf, NPCDataPayload> CODEC = PacketCodec.tuple(
             Uuids.PACKET_CODEC, NPCDataPayload::entityUuid,
             PacketCodecs.STRING, NPCDataPayload::customName,
+<<<<<<< 1.21.1
+            PacketCodecs.BOOL, NPCDataPayload::isPaused, // Encodes/decodes the 'isPaused' state
+            PacketCodecs.BOOL, NPCDataPayload::isFollowing, // Encodes/decodes the 'isFollowing' state
+=======
             PacketCodecs.INTEGER, NPCDataPayload::variant,
             PacketCodecs.BOOLEAN, NPCDataPayload::isPaused, // Encodes/decodes the 'isPaused' state
             PacketCodecs.BOOLEAN, NPCDataPayload::isFollowing, // Encodes/decodes the 'isFollowing' state
+>>>>>>> 1.21.4
             NPCDataPayload::new
     );
 
@@ -38,8 +43,6 @@ public record NPCDataPayload(UUID entityUuid, String customName, int variant, bo
         if (!(context.player().getWorld() instanceof ServerWorld world)) return;
         if (!(world.getEntity(this.entityUuid) instanceof NPCEntity entity)) return;
 
-        // Update the NPC's variant, custom name, paused, and follow states
-        entity.setVariant(this.variant);
         entity.setCustomName(Text.of(this.customName));
         entity.setPaused(this.isPaused); // Update the entity's paused state
         entity.setFollowing(this.isFollowing);

@@ -1,44 +1,19 @@
 package net.asian.civiliansmod.custom_skins;
 
+import net.asian.civiliansmod.util.FolderUtil;
 import net.minecraft.client.MinecraftClient;
+
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 public class SkinFolderManager {
-
-    private static final String BASE_FOLDER_NAME_1 = "civiliansmod_skins_wide";
-    private static final String BASE_FOLDER_NAME_2 = "civiliansmod_skins_slim";
-    static {
-        // Ensure both folders are created when the manager is initialized
-        ensureFolderExists("wide");
-        ensureFolderExists("slim");
-    }
-    public static void ensureFolderExists(String subFolderName) {
-        if (subFolderName.equalsIgnoreCase("both")) {
-
-            //noinspection ResultOfMethodCallIgnored
-            new File(MinecraftClient.getInstance().runDirectory, BASE_FOLDER_NAME_1).mkdirs();
-            //noinspection ResultOfMethodCallIgnored
-            new File(MinecraftClient.getInstance().runDirectory, BASE_FOLDER_NAME_2).mkdirs();
-            return;
-        }
-
-        // Proceed with creating only the specified folder
-        String baseFolderName = subFolderName.equalsIgnoreCase("wide") ? BASE_FOLDER_NAME_1 : BASE_FOLDER_NAME_2;
-        File baseFolder = new File(MinecraftClient.getInstance().runDirectory, baseFolderName);
-
-        if (!baseFolder.exists()) {
-            //noinspection ResultOfMethodCallIgnored
-            baseFolder.mkdirs();
-        }
-    }
-
     public static void openFolder(NPCModel subFolderName) {
         // Determine the base folder name based on the subFolderName
-        String baseFolderName = subFolderName == NPCModel.DEFAULT ? BASE_FOLDER_NAME_1 : BASE_FOLDER_NAME_2;
+        String baseFolderName = subFolderName == NPCModel.WIDE ? FolderUtil.WIDE_SKIN_PATH.toString() : FolderUtil.SLIM_SKIN_PATH.toString();
 
         // Fetch the actual folder
-        File folderToOpen = new File(MinecraftClient.getInstance().runDirectory, baseFolderName);
+        File folderToOpen = new File(baseFolderName);
 
         try {
             // Open the folder based on the OS
@@ -63,6 +38,6 @@ public class SkinFolderManager {
 
     public enum NPCModel {
         SLIM,
-        DEFAULT
+        WIDE
     }
 }

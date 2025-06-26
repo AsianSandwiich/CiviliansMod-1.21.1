@@ -31,17 +31,39 @@ public class NPCRenderer extends MobEntityRenderer<NPCEntity, NPCRenderState, NP
     }
 
     @Override
+<<<<<<< 1.21.1
+    public Identifier getTexture(NPCEntity entity) {
+        return entity.getSkinManager().getIdSkin().id();
+=======
     public NPCRenderState createRenderState() {
         return new NPCRenderState();
+>>>>>>> 1.21.4
     }
 
     /**
      * Adjusts the rendering model (default vs slim) dynamically based on the entity's variant.
      */
     @Override
+<<<<<<< 1.21.1
+    public void render(
+            NPCEntity entity,
+            float entityYaw,
+            float partialTicks,
+            MatrixStack matrices,
+            VertexConsumerProvider vertexConsumers,
+            int light) {
+        // Determine the model to use based on variant (slim = variants 3–5)
+        this.model = entity.getSkinManager().getIdSkin().slim() ? slimModel : defaultModel;
+
+
+
+        // Render the entity using the selected model
+        super.render(entity, entityYaw, partialTicks, matrices, vertexConsumers, light);
+=======
     public void render(NPCRenderState livingEntityRenderState, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
         this.model = livingEntityRenderState.slim ? slimModel : defaultModel;
         super.render(livingEntityRenderState, matrixStack, vertexConsumerProvider, i);
+>>>>>>> 1.21.4
     }
 
     /**
