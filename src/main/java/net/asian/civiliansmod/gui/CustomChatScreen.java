@@ -6,6 +6,7 @@ import net.asian.civiliansmod.gui.widgets.GlobalChatScrollWidget;
 import net.asian.civiliansmod.util.DebugUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -35,13 +36,13 @@ public class CustomChatScreen extends AbstractConfigScreen {
         int x = width / 2;
         int y = height / 2;
         List<Boolean> openList = new ArrayList<>();
-        double offsetY = chatScrollWidget.getScrollAmount();
+        double offsetY = chatScrollWidget.getScrollY();
         chatScrollWidget.children().forEach(chatReasonEntryScrollContainer -> {
             openList.add(chatReasonEntryScrollContainer.getOpen());
         });
 
         chatScrollWidget = new GlobalChatScrollWidget(npc, MinecraftClient.getInstance(), 236, 134, x - 114, y - 60, 10, this);
-        chatScrollWidget.setScrollAmount(Math.min(offsetY, chatScrollWidget.getMaxScroll()));
+        chatScrollWidget.setScrollY(Math.min(offsetY, chatScrollWidget.getMaxScrollY()));
         chatScrollWidget.refreshScroll();
 
         for(int i = 0; i<chatScrollWidget.children().size(); i++ ) {
@@ -51,6 +52,12 @@ public class CustomChatScreen extends AbstractConfigScreen {
         }
         this.addDrawableChild(chatScrollWidget);
         super.init();
+    }
+
+    @Override
+    public boolean mouseScrolled(double d, double e, double f, double g) {
+        chatScrollWidget.mouseScrolled(d, e, f, g);
+        return super.mouseScrolled(d, e, f, g);
     }
 
     @Override
@@ -64,7 +71,7 @@ public class CustomChatScreen extends AbstractConfigScreen {
         int x = width / 2;
         int y = height / 2;
         Identifier guiTexture = Identifier.of("civiliansmod", "textures/gui/chat_gui.png");
-        context.drawTexture(guiTexture, x - 128, y - 83, 0, 0, 0, 256, 166, 256, 166);
+        context.drawTexture(RenderLayer::getGuiTextured, guiTexture, x - 128, y - 83, 0, 0, 256, 166, 256, 166);
     }
 
     @Override

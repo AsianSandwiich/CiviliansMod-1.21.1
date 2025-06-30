@@ -3,6 +3,7 @@ package net.asian.civiliansmod.gui.widgets;
 import net.asian.civiliansmod.CiviliansMod;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -17,11 +18,9 @@ public class DeleteWidget extends ButtonWidget {
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         if (isMouseOver(mouseX, mouseY)) {
-            context.setShaderColor(1.0f, 0, 0, 1.0f);
-            context.drawTexture(BUTTON_HOVERED, this.getX(), this.getY(), 0, 0, 0, this.width, this.height, this.width, this.height);
-            context.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            context.drawTexture(RenderLayer::getGuiTextured, BUTTON_HOVERED, this.getX(), this.getY(), 0, 0,  this.width, this.height, this.width, this.height, 0xFFFF0000);
         } else {
-            context.drawTexture(BUTTON, this.getX(), this.getY(), 0, 0, 0, this.width, this.height, this.width, this.height);
+            context.drawTexture(RenderLayer::getGuiTextured, BUTTON, this.getX(), this.getY(), 0, 0,  this.width, this.height, this.width, this.height);
         }
     }
 }

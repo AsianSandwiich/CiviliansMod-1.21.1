@@ -6,6 +6,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.random.Random;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,12 +17,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-<<<<<<< 1.21.1
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-=======
 import java.util.UUID;
->>>>>>> 1.21.4
 import java.util.stream.Stream;
 
 @Environment(EnvType.CLIENT)
@@ -108,24 +106,19 @@ public class NPCUtil {
                 try {
                     InputStream stream = Files.newInputStream(file);
                     try {
-                        NativeImage image = NativeImage.read(stream);
+                        byte[] skin = stream.readAllBytes();
+                        stream.close();
+                        NativeImage image = NativeImage.read(skin);
                         if (image.getHeight() != 64 || image.getWidth() != 64) {
                             return;
                         }
                         NativeImageBackedTexture dynamicTexture = new NativeImageBackedTexture(image);
-<<<<<<< 1.21.1
-                        skins.add(new SkinIdentifier(MinecraftClient.getInstance().getTextureManager().registerDynamicTexture(CiviliansMod.MOD_ID + "_custom_skin", dynamicTexture), slim, true));
-                        images.put(skins.getLast(), image.getBytes());
-                        System.out.println(i.getAndIncrement());
-=======
-
-                        // Use registerTexture with a unique Identifier
                         Identifier textureId = Identifier.of(CiviliansMod.MOD_ID, "custom_skin_" + UUID.randomUUID());
                         MinecraftClient.getInstance().getTextureManager().registerTexture(textureId, dynamicTexture);
+                        skins.add(new SkinIdentifier(textureId, slim, true));
+                        images.put(skins.getLast(), skin);
 
-                        skins.add(textureId);
                         image.close();
->>>>>>> 1.21.4
                     } catch (Exception e) {
                         CiviliansMod.LOGGER.error("Error while converting skin files", e);
                     }

@@ -7,6 +7,7 @@ import net.asian.civiliansmod.gui.AddDialogueScreen;
 import net.asian.civiliansmod.gui.CustomChatScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Identifier;
 
 public class AddDialogueEntry extends AbstractDialogueEntry {
@@ -21,6 +22,6 @@ public class AddDialogueEntry extends AbstractDialogueEntry {
     @Override
     public void render(DrawContext context, int x, int y, int mouseX, int mouseY, boolean hovered, float delta) {
         super.render(context, x, y, mouseX, mouseY, hovered, delta);
-        context.drawTexture(TEXTURE, x + width / 2 - 4, y + 2, 0, 0, 8, 8, 8, 8);
+        context.drawTexture(RenderLayer::getGuiTextured, TEXTURE, x + width / 2 - 4, y + 2, 0, 0, 8, 8, 8, 8);
     }
 }

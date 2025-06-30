@@ -40,9 +40,6 @@ public record OpenScreenDialoguesPayload(int npcId, String dialogue) implements 
     public void handlePacket(ClientPlayNetworking.Context context) {
         if (!(context.player().getWorld() instanceof World world)) return;
         if (!(world.getEntityById(this.npcId) instanceof NPCEntity)) {
-            System.out.println(world.getEntityById(this.npcId));
-            System.out.println("");
-            Entity entity = world.getEntityById(this.npcId);
             return;
         }
         NPCEntity entity = (NPCEntity) world.getEntityById(npcId);
@@ -50,7 +47,6 @@ public record OpenScreenDialoguesPayload(int npcId, String dialogue) implements 
         Map<String, Map<NpcChat.ChatReason, List<String>>> dialogueMap = new Gson().fromJson(dialogue, type);
         entity.getChatManager().setDialogue(dialogueMap);
         entity.dialoguesReceived = true;
-        entity.openCustomNPCScreen();
 
     }
 }

@@ -3,8 +3,10 @@ package net.asian.civiliansmod.gui.widgets;
 import net.asian.civiliansmod.chat.NpcChat;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.ColorHelper;
 
 public class AbstractDialogueEntry extends ButtonWidget {
     NpcChat.ChatReason chatReason;
@@ -15,11 +17,13 @@ public class AbstractDialogueEntry extends ButtonWidget {
     }
 
     public void render(DrawContext context, int x, int y, int mouseX, int mouseY, boolean hovered, float delta) {
+        int color = 0;
         if (isMouseOver(mouseX, mouseY)) {
-            context.setShaderColor(0.75f, 0.75f, 0.75f, 0.75f);
+            color = ColorHelper.fromFloats(0.75f, 0.75f, 0.75f, 0.75f);
+        }else{
+            color = ColorHelper.fromFloats(1.0f, 1.0f, 1.0f, 1.0f);
         }
-        context.drawGuiTexture(Identifier.ofVanilla("widget/button"), x, y, 112, 12);
-        context.setShaderColor(1f, 1f, 1f, 1f);
+        context.drawGuiTexture(RenderLayer::getGuiTextured, Identifier.ofVanilla("widget/button"), x, y, 112, 12, color);
     }
 
     @Override
