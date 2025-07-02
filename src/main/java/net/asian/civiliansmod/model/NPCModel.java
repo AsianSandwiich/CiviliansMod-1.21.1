@@ -62,7 +62,7 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
         modelPartData4.addChild("jacket", ModelPartBuilder.create().uv(16, 32).cuboid(-4.0F, 0.0F, -2.0F, 8.0F, 12.0F, 4.0F, dilation.add(0.25F)), ModelTransform.NONE);
         return modelData;
     }
-
+  
     public void setAngles(NPCRenderState playerEntityRenderState) {
         boolean bl = !playerEntityRenderState.spectator;
         this.body.visible = bl;

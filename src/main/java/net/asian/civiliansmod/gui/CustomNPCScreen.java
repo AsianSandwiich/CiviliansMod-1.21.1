@@ -1,10 +1,17 @@
 package net.asian.civiliansmod.gui;
 
 import net.asian.civiliansmod.CiviliansMod;
+import net.asian.civiliansmod.chat.NpcChat;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.widgets.ImageButtonWidget;
 import net.asian.civiliansmod.util.NPCUtil;
+import net.asian.civiliansmod.util.SkinIdentifier;
 import net.minecraft.util.Identifier;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 /**
@@ -19,9 +26,23 @@ public class CustomNPCScreen extends AbstratcNPCScreen {
         super(npc, selected, originalVariant);
     }
 
+    public CustomNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex) {
+        super(npc, selected, defaultSkin, selectedVariantIndex);
+    }
+
     @Override
-    protected int[] getStartAndEndIndexes() {
-        return new int[]{NPCUtil.getDefaultCustomSkinIndexes()[0], NPCUtil.getSlimCustomSkinIndexes()[1]};
+    protected List<Integer> getSkinsToRender() {
+        return IntStream.range(0, NPCUtil.getSkins().size())
+                .filter(i -> {
+                    SkinIdentifier skin = NPCUtil.getSkins().get(i);
+                    return skin.custom();
+                })
+                .boxed()
+                .sorted(Comparator.comparingInt(value -> {
+                    SkinIdentifier skin = NPCUtil.getSkins().get(value);
+                    return skin.slim() ? 1 : 0;
+                }))
+                .toList();
     }
 
 
@@ -42,7 +63,7 @@ public class CustomNPCScreen extends AbstratcNPCScreen {
                 Identifier.of(CiviliansMod.MOD_ID, "textures/gui/reset_button.png"),
                 (press) -> {
                     NPCUtil.refreshTextures();
-                    renitIndexes();
+                    NpcChat.refresh();
                     this.init();
                 }
         ));

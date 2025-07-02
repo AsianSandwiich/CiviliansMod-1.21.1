@@ -65,7 +65,7 @@ public class NPCRenderer extends MobEntityRenderer<NPCEntity, NPCRenderState, NP
     @Override
     public void updateRenderState(NPCEntity livingEntity, NPCRenderState livingEntityRenderState, float f) {
         super.updateRenderState(livingEntity, livingEntityRenderState, f);
-        livingEntityRenderState.texture = livingEntity.getSkinTexture();
-        livingEntityRenderState.slim = livingEntity.isSlim();
+        livingEntityRenderState.texture = livingEntity.getSkinManager().getIdSkin().id();
+        livingEntityRenderState.slim = livingEntity.getSkinManager().getIdSkin().slim();
     }
 }

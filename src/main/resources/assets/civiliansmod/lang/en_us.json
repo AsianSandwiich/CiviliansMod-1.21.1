@@ -1,3 +1,12 @@
 {
-  "item.civiliansmod.npctotem": "NPC Totem"
+  "item.civiliansmod.npctotem": "NPC Totem",
+  "civilians.gui.skin": "Skins",
+  "civilians.gui.chat": "Dialogues",
+  "civilians.gui.cancel" : "Cancel",
+  "civilians.gui.confirm" : "Confirm",
+  "civilians.gui.add_dialogue" : "Enter the text you want to add",
+  "civilians.gui.edit_dialogue" : "Enter the text you want to edit",
+  "civilians.gui.save" : "Save",
+  "civilians.gui.add" : "Add",
+  "gui.civilians.delete_dialogue" : "Are you sure you want to delete this dialogue?"
 }

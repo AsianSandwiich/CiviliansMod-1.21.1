@@ -15,93 +15,64 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 @Environment(EnvType.CLIENT)
 public class NPCUtil {
-    /**
-     * list of all npc textures
-     */
-    private static List<Identifier> skins = new ArrayList<>();
+    public static final Map<Integer, SkinIdentifier> waitingSync = new HashMap<>();
 
-    /**
-     * array representing limitations of the variants
-     */
-    static int[] indexes;
+
+    static final List<SkinIdentifier> skins = new ArrayList<>();
+
+    public static List<SkinIdentifier> getSkins() {
+        return skins;
+    }
+
+    public static Map<SkinIdentifier, byte[]> images = new HashMap<>();
 
     public static boolean isSlim(int index) {
-        if (index <= indexes[1])
-            return false;
-        if (index <= indexes[2])
-            return true;
-        return index > indexes[3];
+        return skins.get(index).slim();
     }
 
-    public static int[] getDefaultSkinIndexes() {
-        return new int[]{0, indexes[1]};
-    }
 
-    public static int[] getSlimSkinIndexes() {
-        return new int[]{indexes[1] + 1, indexes[2]};
-    }
-
-    public static int[] getDefaultCustomSkinIndexes() {
-        return new int[]{indexes[2] + 1, indexes[3]};
-    }
-
-    public static boolean hasDefaultSkin(int index) {
-        return index < indexes[1];
-    }
-
-    public static boolean hasSlimSkin(int index) {
-        return index > indexes[1] && index <= indexes[2];
-    }
-
-    public static int[] getSlimCustomSkinIndexes() {
-        return new int[]{indexes[3] + 1, indexes[4]};
-    }
-
-    public static List<Identifier> getDefaultSkins() {
-        List<Identifier> skins = new ArrayList<>();
+    private static void registerDefaultSkins() {
         MinecraftClient.getInstance().getResourceManager().findResources("textures/entity/npc/wide", path -> path.toString().endsWith(".png")).forEach((id, resource) -> {
-            skins.add(id);
+            skins.add(new SkinIdentifier(id, false, false));
         });
-        return skins;
     }
 
-    public static List<Identifier> getSlimSkins() {
-        List<Identifier> skins = new ArrayList<>();
+    private static void registerSlimSkins() {
         MinecraftClient.getInstance().getResourceManager().findResources("textures/entity/npc/slim", path -> path.toString().endsWith(".png")).forEach((id, resource) -> {
-            skins.add(id);
+            skins.add(new SkinIdentifier(id, true, false));
         });
-        return skins;
     }
 
-    public static List<Identifier> getDefaultCustomSkins() {
-        try (var files = Files.list(MinecraftClient.getInstance().runDirectory.toPath().resolve("civiliansmod_skins_wide"))) {
-            return searchAndConvertSkins(files);
+    private static void registerDefaultCustomSkins() {
+        try (var files = Files.list(FolderUtil.WIDE_SKIN_PATH)) {
+            searchAndConvertSkins(files, false);
         } catch (
                 IOException e) {
             CiviliansMod.LOGGER.error("error while listing skin files");
             e.printStackTrace();
         }
-        return null;
     }
 
-    public static List<Identifier> getSlimCustomSkins() {
-        try (var files = Files.list(MinecraftClient.getInstance().runDirectory.toPath().resolve("civiliansmod_skins_slim"))) {
-            return searchAndConvertSkins(files);
+    private static void registerSlimCustomSkins() {
+        try (var files = Files.list(FolderUtil.SLIM_SKIN_PATH)) {
+            searchAndConvertSkins(files, true);
         } catch (
                 IOException e) {
             CiviliansMod.LOGGER.error("error while listing skin files");
             e.printStackTrace();
         }
-        return null;
     }
 
-    public static Identifier getNPCTexture(int texture) {
+    public static SkinIdentifier getNPCTexture(int texture) {
         if (texture > skins.size() - 1) {
             texture = Random.create().nextInt(skins.size() - 1);
         }
@@ -113,28 +84,12 @@ public class NPCUtil {
      * method to refresh all the npc textures.
      */
     public static void refreshTextures() {
-        indexes = new int[5];
-        skins = new ArrayList<>();
-        indexes[0] = 0;
-        skins.addAll(getDefaultSkins());
+        skins.clear();
+        registerDefaultSkins();
+        registerSlimSkins();
 
-        indexes[1] = skins.size() - 1;
-        skins.addAll(getSlimSkins());
-
-        indexes[2] = skins.size() - 1;
-        var customDefault = getDefaultCustomSkins();
-
-        var customSlim = getSlimCustomSkins();
-
-        if (customDefault != null) {
-            skins.addAll(customDefault);
-        }
-        indexes[3] = skins.size() - 1;
-
-        if (customSlim != null) {
-            skins.addAll(customSlim);
-        }
-        indexes[4] = skins.size() - 1;
+        registerDefaultCustomSkins();
+        registerSlimCustomSkins();
     }
 
 
@@ -144,24 +99,25 @@ public class NPCUtil {
      *
      * @param files the {@code Stream<Path>} that represents the files in the directory.
      */
-    private static List<Identifier> searchAndConvertSkins(Stream<@NotNull Path> files) {
-        List<Identifier> skins = new ArrayList<>();
+    private static void searchAndConvertSkins(Stream<@NotNull Path> files, boolean slim) {
+        AtomicInteger i = new AtomicInteger();
         files.forEach((file) -> {
             if (file.getFileName().toString().endsWith(".png")) {
                 try {
                     InputStream stream = Files.newInputStream(file);
                     try {
-                        NativeImage image = NativeImage.read(stream);
+                        byte[] skin = stream.readAllBytes();
+                        stream.close();
+                        NativeImage image = NativeImage.read(skin);
                         if (image.getHeight() != 64 || image.getWidth() != 64) {
                             return;
                         }
                         NativeImageBackedTexture dynamicTexture = new NativeImageBackedTexture(image);
-
-                        // Use registerTexture with a unique Identifier
                         Identifier textureId = Identifier.of(CiviliansMod.MOD_ID, "custom_skin_" + UUID.randomUUID());
                         MinecraftClient.getInstance().getTextureManager().registerTexture(textureId, dynamicTexture);
+                        skins.add(new SkinIdentifier(textureId, slim, true));
+                        images.put(skins.getLast(), skin);
 
-                        skins.add(textureId);
                         image.close();
                     } catch (Exception e) {
                         CiviliansMod.LOGGER.error("Error while converting skin files", e);
@@ -173,7 +129,11 @@ public class NPCUtil {
             }
 
         });
-        return skins;
     }
+
+    public static void registerSkin(){
+
+    }
+
 
 }
