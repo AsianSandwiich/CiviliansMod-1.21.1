@@ -39,7 +39,6 @@ public record ClientNpcSkinPayload(int npcId, boolean slim, byte[] skin) impleme
         ClientWorld clientWorld = context.player().clientWorld;
 
         Entity entityById = clientWorld.getEntityById(this.npcId);
-        System.out.println("p");
 
         try {
             NativeImage image = NativeImage.read(skin);

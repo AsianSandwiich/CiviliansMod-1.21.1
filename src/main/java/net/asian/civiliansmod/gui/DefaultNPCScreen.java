@@ -18,8 +18,8 @@ public class DefaultNPCScreen extends AbstratcNPCScreen {
         super(npc);
     }
 
-    public DefaultNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex) {
-        super(npc, selected, defaultSkin, selectedVariantIndex);
+    public DefaultNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex,boolean follow, boolean stay) {
+        super(npc, selected, defaultSkin, selectedVariantIndex, follow, stay);
     }
 
     @Override

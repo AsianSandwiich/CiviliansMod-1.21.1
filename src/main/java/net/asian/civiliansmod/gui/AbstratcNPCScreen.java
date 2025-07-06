@@ -54,6 +54,9 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
      */
     boolean save = false;
 
+    boolean follow;
+    boolean stay;
+
     int startVariantIndex = 0;
 
     List<Integer> toRender = new ArrayList<>();
@@ -70,9 +73,11 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         toRender = getSkinsToRender();
         this.originalVariant = NPCUtil.getSkins().indexOf(npc.getSkinManager().getIdSkin()); // Save the current variant to initialize the preview
         this.defaultSkin = defaultSkin;
+        this.follow = npc.isFollowing();
+        this.stay = npc.isPaused();
     }
 
-    public AbstratcNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex) {
+    public AbstratcNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex, boolean follow, boolean stay) {
         super(npc, Text.literal("Change NPC Variant"));
         this.npc = npc;
         this.selectedVariant = selected;
@@ -80,6 +85,8 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         this.selectedVariantIndex = selectedVariantIndex;
         this.originalVariant = NPCUtil.getSkins().indexOf(npc.getSkinManager().getIdSkin()); // Save the current variant to initialize the preview
         this.defaultSkin = defaultSkin;
+        this.follow = follow;
+        this.stay = stay;
     }
 
     protected abstract List<Integer> getSkinsToRender();
@@ -181,16 +188,16 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         int containerY = (this.height - containerHeight) / 2;
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Wide"),
-                button -> MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex))
+                button -> MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex, follow, stay))
         ).dimensions(containerX + 82, containerY + 22, 39, 12).build());
 
         // Add Slim tab button
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Slim"),
-                button -> MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex))
+                button -> MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex, follow, stay))
         ).dimensions(containerX + 121, containerY + 22, 40, 12).build());
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Custom"),
-                button -> MinecraftClient.getInstance().setScreen(new CustomNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex))
+                button -> MinecraftClient.getInstance().setScreen(new CustomNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex, follow, stay))
         ).dimensions(containerX + 161, containerY + 22, 39, 12).build());
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Save"), button -> {
@@ -253,6 +260,8 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         if (MinecraftClient.getInstance().player != null) {
             if (!save) {
                 npc.getSkinManager().setIdSkin(NPCUtil.getNPCTexture(this.defaultSkin));
+                npc.setFollowing(follow);
+                npc.setPaused(stay);
                 super.close();
                 return;
             }
@@ -350,7 +359,6 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         if (mouseY < containerY || mouseY > containerY + containerHeight) {
             return -1; // Mouse click is entirely outside the vertical container area
         }
-
 
 
         /// In the case where the number of skins to diplay is less than the number that the box can contain.

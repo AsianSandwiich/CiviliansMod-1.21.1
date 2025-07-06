@@ -21,8 +21,8 @@ public class SlimNPCScreen extends AbstratcNPCScreen {
         super(npc, selected, originalVariant);
     }
 
-    public SlimNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex) {
-        super(npc, selected, defaultSkin, selectedVariantIndex);
+    public SlimNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex, boolean follow, boolean stay) {
+        super(npc, selected, defaultSkin, selectedVariantIndex, follow, stay);
     }
 
     @Override
