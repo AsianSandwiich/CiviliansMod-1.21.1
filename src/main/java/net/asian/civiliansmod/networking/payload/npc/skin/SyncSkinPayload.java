@@ -31,14 +31,11 @@ public record SyncSkinPayload(int npcId, int id) implements CustomPayload {
         Entity entityById = clientWorld.getEntityById(this.npcId);
 
         if (entityById == null) {
-            System.out.println(id);
             NPCUtil.waitingSync.put(npcId, NPCUtil.getNPCTexture(id));
-            System.out.println("a");
             return;
         }
         if(entityById instanceof NPCEntity npcEntity) {
             npcEntity.getSkinManager().setIdSkin(NPCUtil.getNPCTexture(id));
-            System.out.println("o");
         }
     }
 }

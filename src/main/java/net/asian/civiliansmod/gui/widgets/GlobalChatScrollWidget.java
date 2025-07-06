@@ -83,7 +83,6 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
 
     @Override
     public boolean mouseScrolled(double d, double e, double f, double g) {
-        System.out.println(this.getScrollY());
         if (!this.visible) {
             return false;
         } else {
@@ -108,11 +107,13 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
             if (dialogueEntryScrollContainer.onClick(mouseX, mouseY)) {
                 return;
             }
-            dialogueEntryScrollContainer.entries.forEach(entry -> {
-                entry.dialogueEntryList.forEach(dialogueEntry -> {
-                    dialogueEntry.onClick(mouseX, mouseY);
+            if (dialogueEntryScrollContainer.open) {
+                dialogueEntryScrollContainer.entries.forEach(entry -> {
+                    entry.dialogueEntryList.forEach(dialogueEntry -> {
+                        dialogueEntry.onClick(mouseX, mouseY);
+                    });
                 });
-            });
+            }
         });
     }
 }

@@ -253,7 +253,6 @@ public class NPCEntity extends PathAwareEntity {
 
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
-        System.out.println(this.getId());
 
         // Ensure the interaction is in the main hand
         if (hand == Hand.MAIN_HAND) {
