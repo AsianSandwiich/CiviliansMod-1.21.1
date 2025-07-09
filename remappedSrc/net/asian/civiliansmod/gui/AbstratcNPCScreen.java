@@ -397,7 +397,6 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         int variantToRender = (selectedVariantIndex == -1) ? originalVariant : selectedVariantIndex;
 
         // Create the preview NPC entity with the selected skin/variant
-        //TODO fix
 
         NPCEntity previewNPC;
         if (originalVariant == -1) {
