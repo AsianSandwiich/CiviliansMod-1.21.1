@@ -45,11 +45,11 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
             scrollY = Math.max(scrollY, this.getY());
 
             int scrollbarX = this.getScrollbarX();
-            RenderSystem.enableBlend();
+            // No need for blend states in modern versions as DrawContext handles it
             context.fill(scrollbarX, scrollY - 2, scrollbarX + 3, scrollY + scrollbarHeight, 0xFFAAAAAA);
-            RenderSystem.disableBlend();
         }
     }
+
 
     protected int getEntryTop(int index) {
         int y = this.getY() - (int) this.getScrollY();

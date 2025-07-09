@@ -7,6 +7,7 @@ import net.asian.civiliansmod.entity.goal.CustomDoorGoal;
 import net.asian.civiliansmod.gui.CustomNPCScreen;
 import net.asian.civiliansmod.gui.DefaultNPCScreen;
 import net.asian.civiliansmod.gui.SlimNPCScreen;
+import java.util.Arrays;
 import net.asian.civiliansmod.networking.payload.npc.dialogue.CilentDialogueSyncPayload;
 import net.asian.civiliansmod.networking.payload.npc.dialogue.DialogueSyncPayload;
 import net.asian.civiliansmod.networking.payload.npc.dialogue.OpenScreenDialoguesPayload;
@@ -78,10 +79,6 @@ public class NPCEntity extends PathAwareEntity {
         return skinManager;
     }
 
-    public NameManager getNameManager() {
-        return nameManager;
-    }
-
     NameManager nameManager = new NameManager(this);
     NpcChatManager chatManager = new NpcChatManager(this);
     SkinManager skinManager = new SkinManager(this);
@@ -101,11 +98,11 @@ public class NPCEntity extends PathAwareEntity {
     @Override
     public Packet<ClientPlayPacketListener> createSpawnPacket(EntityTrackerEntry entityTrackerEntry) {
         if (this.skinManager.skinByteArray == null) {
-            for (ServerPlayerEntity player : this.getWorld().getServer().getPlayerManager().getPlayerList()) {
+            for (ServerPlayerEntity player : Objects.requireNonNull(this.getWorld().getServer()).getPlayerManager().getPlayerList()) {
                 ServerPlayNetworking.send(player, new SyncSkinPayload(this.getId(), this.skinManager.baseVariant));
             }
         } else {
-            for (ServerPlayerEntity player : this.getWorld().getServer().getPlayerManager().getPlayerList()) {
+            for (ServerPlayerEntity player : Objects.requireNonNull(this.getWorld().getServer()).getPlayerManager().getPlayerList()) {
                 ServerPlayNetworking.send(player, new ClientNpcSkinPayload(this.getId(), this.skinManager.slim, this.skinManager.skinByteArray));
             }
         }
@@ -117,19 +114,6 @@ public class NPCEntity extends PathAwareEntity {
 
 
         if (!this.getWorld().isClient) {
-            // Assign default model and slim model names to the entity
-
-/*
-            int variant = this.random.nextInt(88);
-            this.setVariant(variant);
-            if (this.getVariant() <= 43) {
-                String randomName = defaultModelNames[this.random.nextInt(defaultModelNames.length)];
-                this.setCustomName(Text.literal(randomName));
-            } else {
-                String randomName = slimModelNames[this.random.nextInt(slimModelNames.length)];
-                this.setCustomName(Text.literal(randomName));
-            }
-*/
             this.setCustomNameVisible(true);
             this.sent = new HashSet<>();
         } else {
@@ -181,20 +165,19 @@ public class NPCEntity extends PathAwareEntity {
 
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
-        super.readCustomDataFromNbt(nbt); // Call parent to load standard entity data
+        super.readCustomDataFromNbt(nbt);
         if (nbt.contains("IsPaused")) {
-            this.setPaused(nbt.getBoolean("IsPaused")); // Load paused state
+            this.setPaused(nbt.getBoolean("IsPaused").get());
         }
         if (nbt.contains("IsFollowing")) {
-            this.setFollowing(nbt.getBoolean("IsFollowing"));
+            this.setFollowing(nbt.getBoolean("IsFollowing").get());
         }
-
         if (nbt.contains("dialogues")) {
             this.chatManager.setFromNbt(nbt.getCompound("dialogues"));
         }
-
         this.skinManager.readNbt(nbt);
     }
+
 
     public static DefaultAttributeContainer.Builder createAttributes() {
         return PathAwareEntity.createMobAttributes()
@@ -536,26 +519,37 @@ public class NPCEntity extends PathAwareEntity {
             return mainCompound;
         }
 
-        public void setFromNbt(NbtCompound nbt) {
+        public void setFromNbt(Optional<NbtCompound> nbtOptional) {
+            if (!nbtOptional.isPresent()) {
+                return;
+            }
+
+            NbtCompound nbt = nbtOptional.get();
             Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues = new HashMap<>();
 
             for (String language : nbt.getKeys()) {
-                NbtCompound languageCompound = nbt.getCompound(language);
+                Optional<NbtCompound> languageCompoundOpt = nbt.getCompound(language);
+                if (!languageCompoundOpt.isPresent()) continue;
+
+                NbtCompound languageCompound = languageCompoundOpt.get();
                 Map<NpcChat.ChatReason, List<String>> reasonToMessages = new HashMap<>();
 
                 for (String reasonName : languageCompound.getKeys()) {
                     try {
                         NpcChat.ChatReason reason = NpcChat.ChatReason.fromName(reasonName);
-                        NbtList messageList = languageCompound.getList(reasonName, NbtElement.STRING_TYPE);
-                        List<String> messages = new ArrayList<>();
+                        Optional<NbtList> optionalList = languageCompound.getList(reasonName);
+                        if (optionalList.isPresent()) {
+                            NbtList messageList = optionalList.get();
+                            List<String> messages = new ArrayList<>();
 
-                        for (NbtElement element : messageList) {
-                            messages.add(element.asString());
+                            for (NbtElement element : messageList) {
+                                messages.add(element.asString().toString());
+                            }
+
+                            reasonToMessages.put(reason, messages);
                         }
-
-                        reasonToMessages.put(reason, messages);
                     } catch (Exception e) {
-                        CiviliansMod.LOGGER.error("Unexpected reason: " + reasonName, e);
+                        CiviliansMod.LOGGER.error("Unexpected reason: {}", reasonName, e);
                     }
                 }
 
@@ -564,6 +558,8 @@ public class NPCEntity extends PathAwareEntity {
 
             this.dialogues = dialogues;
         }
+
+
 
         public void markDialoguesDirty(UUID avoid) {
             if (npc.getWorld() instanceof ServerWorld serverWorld) {
@@ -603,10 +599,6 @@ public class NPCEntity extends PathAwareEntity {
 
         SkinIdentifier skinIdentifier;
 
-        public int getBaseVariant() {
-            return baseVariant;
-        }
-
         public void setBaseVariant(int baseVariant) {
             this.baseVariant = baseVariant;
         }
@@ -623,21 +615,13 @@ public class NPCEntity extends PathAwareEntity {
             this.npcEntity = npcEntity;
             this.defaultSkin = true;
             this.baseVariant = npcEntity.random.nextInt(88);
-            if (baseVariant <= 43) {
-                this.slim = false;
-            } else {
-                this.slim = true;
-            }
+            this.slim = baseVariant > 43;
 
             npcEntity.nameManager.setRandomName(this.slim);
         }
 
         public boolean isSlim() {
             return slim;
-        }
-
-        public byte[] getSkinByteArray() {
-            return skinByteArray;
         }
 
         public void setSkinByteArray(byte[] skinByteArray) {
@@ -666,11 +650,14 @@ public class NPCEntity extends PathAwareEntity {
         }
 
         void readNbt(NbtCompound nbt) {
-            this.baseVariant = nbt.getInt("basevariat");
+            this.baseVariant = nbt.getInt("basevariat").get();
             if (nbt.contains("skin")) {
-                this.skinByteArray = nbt.getByteArray("skin");
+                Optional<byte[]> skinData = nbt.getByteArray("skin");
+                skinData.ifPresent(bytes -> this.skinByteArray = Arrays.copyOf(bytes, bytes.length));
             }
         }
+
+
 
         public void setSlim(boolean slim) {
             this.slim = slim;

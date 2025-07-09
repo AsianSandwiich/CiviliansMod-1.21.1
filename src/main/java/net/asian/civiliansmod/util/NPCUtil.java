@@ -112,8 +112,9 @@ public class NPCUtil {
                         if (image.getHeight() != 64 || image.getWidth() != 64) {
                             return;
                         }
-                        NativeImageBackedTexture dynamicTexture = new NativeImageBackedTexture(image);
-                        Identifier textureId = Identifier.of(CiviliansMod.MOD_ID, "custom_skin_" + UUID.randomUUID());
+                        String textureName = "custom_skin_" + UUID.randomUUID();
+                        NativeImageBackedTexture dynamicTexture = new NativeImageBackedTexture(() -> textureName, image);
+                        Identifier textureId = Identifier.of(CiviliansMod.MOD_ID, textureName);
                         MinecraftClient.getInstance().getTextureManager().registerTexture(textureId, dynamicTexture);
                         skins.add(new SkinIdentifier(textureId, slim, true));
                         images.put(skins.getLast(), skin);
@@ -127,7 +128,6 @@ public class NPCUtil {
                     CiviliansMod.LOGGER.error("Error while converting skin files", e);
                 }
             }
-
         });
     }
 

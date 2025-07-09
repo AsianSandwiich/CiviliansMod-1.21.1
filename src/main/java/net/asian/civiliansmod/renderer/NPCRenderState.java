@@ -21,11 +21,8 @@ public class NPCRenderState extends BipedEntityRenderState {
     public boolean rightPantsLegVisible = true;
     public boolean leftSleeveVisible = true;
     public boolean rightSleeveVisible = true;
-    public boolean capeVisible = true;
     public float glidingTicks;
-    public boolean applyFlyingRotation;
-    public float flyingRotation;
-    public boolean handSwinging;
+
     @Nullable
     public Text playerName;
     @Nullable

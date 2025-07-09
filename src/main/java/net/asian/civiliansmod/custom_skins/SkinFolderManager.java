@@ -1,11 +1,9 @@
 package net.asian.civiliansmod.custom_skins;
 
 import net.asian.civiliansmod.util.FolderUtil;
-import net.minecraft.client.MinecraftClient;
-
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
+
 
 public class SkinFolderManager {
     public static void openFolder(NPCModel subFolderName) {

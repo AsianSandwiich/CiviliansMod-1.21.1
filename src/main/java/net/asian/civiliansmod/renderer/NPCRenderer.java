@@ -36,7 +36,7 @@ public class NPCRenderer extends MobEntityRenderer<NPCEntity, NPCRenderState, NP
     }
 
     /**
-     * Adjusts the rendering model (default vs slim) dynamically based on the entity's variant.
+     * Adjusts the rendering model (default vs. slim) dynamically based on the entity's variant.
      */
     @Override
     public void render(NPCRenderState livingEntityRenderState, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {

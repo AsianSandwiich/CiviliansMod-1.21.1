@@ -34,10 +34,7 @@ public record ClientNpcSkinPayload(int npcId, boolean slim, byte[] skin) impleme
     }
 
     public void handlePacket(ClientPlayNetworking.Context context) {
-        //if (skin.length != 16384) return;
-
         ClientWorld clientWorld = context.player().clientWorld;
-
         Entity entityById = clientWorld.getEntityById(this.npcId);
 
         try {
@@ -45,8 +42,9 @@ public record ClientNpcSkinPayload(int npcId, boolean slim, byte[] skin) impleme
             if (image.getHeight() != 64 || image.getWidth() != 64) {
                 return;
             }
-            NativeImageBackedTexture dynamicTexture = new NativeImageBackedTexture(image);
-            Identifier skinIdentifier = Identifier.of(CiviliansMod.MOD_ID, "custom_skin_" + UUID.randomUUID());
+            String textureName = "custom_skin_" + UUID.randomUUID();
+            NativeImageBackedTexture dynamicTexture = new NativeImageBackedTexture(() -> textureName, image);
+            Identifier skinIdentifier = Identifier.of(CiviliansMod.MOD_ID, textureName);
             MinecraftClient.getInstance().getTextureManager().registerTexture(skinIdentifier, dynamicTexture);
 
             image.close();

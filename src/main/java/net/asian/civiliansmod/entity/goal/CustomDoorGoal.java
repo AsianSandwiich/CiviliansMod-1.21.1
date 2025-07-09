@@ -14,7 +14,7 @@ public class CustomDoorGoal extends Goal {
     private final PathAwareEntity npc;           // NPC instance
     private BlockPos targetDoorPos;              // Store the location of the door
     private boolean isDoorOpened = false;        // Whether the door is currently open
-    private boolean isNavigating = false;        // Whether NPC is in navigation mode (through door)
+    private boolean isNavigating = false;
     private int stuckTimer = 0;                  // Timer to handle NPC being stuck
     private int interactionCooldown = 0;         // Cooldown between door interactions
 
@@ -68,7 +68,7 @@ public class CustomDoorGoal extends Goal {
             stuckTimer = 0;
         }
 
-        // Close door after passing
+
         if (isDoorOpened && !isNavigating && stuckTimer >= 20) {
             closeDoor();
         }
@@ -76,7 +76,7 @@ public class CustomDoorGoal extends Goal {
 
     @Override
     public void stop() {
-        // Reset states when goal is stopped
+
         targetDoorPos = null;
         isDoorOpened = false;
         isNavigating = false;

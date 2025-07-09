@@ -10,7 +10,6 @@ import net.minecraft.util.Identifier;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
@@ -20,10 +19,6 @@ import java.util.stream.IntStream;
 public class CustomNPCScreen extends AbstratcNPCScreen {
     public CustomNPCScreen(NPCEntity npc) {
         super(npc);
-    }
-
-    public CustomNPCScreen(NPCEntity npc, int selected, int originalVariant) {
-        super(npc, selected, originalVariant);
     }
 
     public CustomNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex, boolean follow, boolean stay) {
