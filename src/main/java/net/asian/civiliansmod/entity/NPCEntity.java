@@ -167,10 +167,10 @@ public class NPCEntity extends PathAwareEntity {
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
         if (nbt.contains("IsPaused")) {
-            this.setPaused(nbt.getBoolean("IsPaused").get());
+            this.setPaused(nbt.getBoolean("IsPaused").orElse(false));
         }
         if (nbt.contains("IsFollowing")) {
-            this.setFollowing(nbt.getBoolean("IsFollowing").get());
+            this.setFollowing(nbt.getBoolean("IsFollowing").orElse(false));
         }
         if (nbt.contains("dialogues")) {
             this.chatManager.setFromNbt(nbt.getCompound("dialogues"));
@@ -520,7 +520,7 @@ public class NPCEntity extends PathAwareEntity {
         }
 
         public void setFromNbt(Optional<NbtCompound> nbtOptional) {
-            if (!nbtOptional.isPresent()) {
+            if (nbtOptional.isEmpty()) {
                 return;
             }
 
@@ -543,7 +543,7 @@ public class NPCEntity extends PathAwareEntity {
                             List<String> messages = new ArrayList<>();
 
                             for (NbtElement element : messageList) {
-                                messages.add(element.asString().toString());
+                                messages.add(element.asString().orElse(""));
                             }
 
                             reasonToMessages.put(reason, messages);
