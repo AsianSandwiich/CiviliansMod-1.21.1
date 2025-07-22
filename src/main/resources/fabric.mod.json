@@ -27,8 +27,8 @@
   },
   "depends": {
     "fabricloader": ">=0.16.14",
-    "minecraft": "1.21.5",
-    "fabric-api": ">=0.128.1+1.21.5"
+    "minecraft": "1.21.7",
+    "fabric-api": ">=0.128.1+1.21.7"
   },
   "mixins": [
     "civiliansmod.mixins.json"
