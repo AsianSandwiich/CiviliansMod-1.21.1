@@ -5,6 +5,7 @@ import net.asian.civiliansmod.gui.widgets.ChatReasonEntryScrollContainer;
 import net.asian.civiliansmod.gui.widgets.GlobalChatScrollWidget;
 import net.asian.civiliansmod.util.DebugUtil;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
@@ -71,7 +72,7 @@ public class CustomChatScreen extends AbstractConfigScreen {
         int x = width / 2;
         int y = height / 2;
         Identifier guiTexture = Identifier.of("civiliansmod", "textures/gui/chat_gui.png");
-        context.drawTexture(RenderLayer::getGuiTextured, guiTexture, x - 128, y - 83, 0, 0, 256, 166, 256, 166);
+        context.drawTexture(RenderPipelines.GUI_TEXTURED, guiTexture, x - 128, y - 83, 0, 0, 256, 166, 256, 166);
     }
 
     @Override

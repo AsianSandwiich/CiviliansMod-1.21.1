@@ -1,6 +1,7 @@
 package net.asian.civiliansmod.gui.widgets;
 
 import net.asian.civiliansmod.CiviliansMod;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.render.RenderLayer;
@@ -28,9 +29,9 @@ public class OpenWidget extends ButtonWidget {
             this.setY(baseY + 1);
 
         if (isMouseOver(mouseX, mouseY)) {
-            context.drawTexture(RenderLayer::getGuiTextured, scrollWidget.open ? OPEN_HOVERED : CLOSE_HOVERED, this.getX(), this.getY() , 0, 0,  this.width, this.height, this.width, this.height);
+            context.drawTexture(RenderPipelines.GUI_TEXTURED, scrollWidget.open ? OPEN_HOVERED : CLOSE_HOVERED, this.getX(), this.getY() , 0, 0,  this.width, this.height, this.width, this.height);
         } else {
-            context.drawTexture(RenderLayer::getGuiTextured,scrollWidget.open ? OPEN : CLOSE, this.getX(), this.getY(), 0, 0,  this.width, this.height, this.width, this.height);
+            context.drawTexture(RenderPipelines.GUI_TEXTURED,scrollWidget.open ? OPEN : CLOSE, this.getX(), this.getY(), 0, 0,  this.width, this.height, this.width, this.height);
         }
     }
 

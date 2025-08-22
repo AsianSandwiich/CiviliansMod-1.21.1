@@ -1,5 +1,7 @@
 package net.asian.civiliansmod.entity;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.chat.DefaultChat;
 import net.asian.civiliansmod.chat.NpcChat;
@@ -7,7 +9,7 @@ import net.asian.civiliansmod.entity.goal.CustomDoorGoal;
 import net.asian.civiliansmod.gui.CustomNPCScreen;
 import net.asian.civiliansmod.gui.DefaultNPCScreen;
 import net.asian.civiliansmod.gui.SlimNPCScreen;
-import java.util.Arrays;
+
 import net.asian.civiliansmod.networking.payload.npc.dialogue.CilentDialogueSyncPayload;
 import net.asian.civiliansmod.networking.payload.npc.dialogue.DialogueSyncPayload;
 import net.asian.civiliansmod.networking.payload.npc.dialogue.OpenScreenDialoguesPayload;
@@ -34,7 +36,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -43,6 +44,8 @@ import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.server.network.EntityTrackerEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -153,29 +156,25 @@ public class NPCEntity extends PathAwareEntity {
     }
 
     @Override
-    public void writeCustomDataToNbt(NbtCompound nbt) {
-        super.writeCustomDataToNbt(nbt);
+    protected void writeCustomData(WriteView writeView) {
+        super.writeCustomData(writeView);
 
-        // Save the variant to NBT
-        nbt.putBoolean("IsPaused", this.isPaused());
-        nbt.putBoolean("IsFollowing", this.isFollowing());
-        nbt.put("dialogues", chatManager.saveDialogues());
-        this.skinManager.writeNbt(nbt);
+        writeView.putBoolean("IsPaused", this.isPaused());
+        writeView.putBoolean("IsFollowing", this.isFollowing());
+        writeView.put("dialogues", Dialogues.CODEC, chatManager.saveDialogues());
+        this.skinManager.writeView(writeView);
     }
 
     @Override
-    public void readCustomDataFromNbt(NbtCompound nbt) {
-        super.readCustomDataFromNbt(nbt);
-        if (nbt.contains("IsPaused")) {
-            this.setPaused(nbt.getBoolean("IsPaused").orElse(false));
-        }
-        if (nbt.contains("IsFollowing")) {
-            this.setFollowing(nbt.getBoolean("IsFollowing").orElse(false));
-        }
-        if (nbt.contains("dialogues")) {
-            this.chatManager.setFromNbt(nbt.getCompound("dialogues"));
-        }
-        this.skinManager.readNbt(nbt);
+    protected void readCustomData(ReadView readView) {
+        super.readCustomData(readView);
+        this.setPaused(readView.getBoolean("IsPaused", false));
+
+        this.setFollowing(readView.getBoolean("IsFollowing", false));
+
+        this.chatManager.setFromReadView(readView);
+
+        this.skinManager.readNbt(readView);
     }
 
 
@@ -512,53 +511,26 @@ public class NPCEntity extends PathAwareEntity {
         }
 
 
-        public NbtCompound saveDialogues() {
-            NbtCompound mainCompound = new NbtCompound();
-            dialogues.forEach(getManageCompoundSave(mainCompound));
-
-            return mainCompound;
+        public Dialogues saveDialogues() {
+            return Dialogues.fromMap(dialogues);
         }
 
-        public void setFromNbt(Optional<NbtCompound> nbtOptional) {
-            if (nbtOptional.isEmpty()) {
-                return;
-            }
+        public void setFromReadView(ReadView readView) {
 
-            NbtCompound nbt = nbtOptional.get();
-            Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues = new HashMap<>();
+            Optional<Dialogues> dialoguesOptional = readView.read("dialogues", Dialogues.CODEC);
+            if (dialoguesOptional.isEmpty()) return;
 
-            for (String language : nbt.getKeys()) {
-                Optional<NbtCompound> languageCompoundOpt = nbt.getCompound(language);
-                if (!languageCompoundOpt.isPresent()) continue;
-
-                NbtCompound languageCompound = languageCompoundOpt.get();
-                Map<NpcChat.ChatReason, List<String>> reasonToMessages = new HashMap<>();
-
-                for (String reasonName : languageCompound.getKeys()) {
-                    try {
-                        NpcChat.ChatReason reason = NpcChat.ChatReason.fromName(reasonName);
-                        Optional<NbtList> optionalList = languageCompound.getList(reasonName);
-                        if (optionalList.isPresent()) {
-                            NbtList messageList = optionalList.get();
-                            List<String> messages = new ArrayList<>();
-
-                            for (NbtElement element : messageList) {
-                                messages.add(element.asString().orElse(""));
-                            }
-
-                            reasonToMessages.put(reason, messages);
-                        }
-                    } catch (Exception e) {
-                        CiviliansMod.LOGGER.error("Unexpected reason: {}", reasonName, e);
-                    }
-                }
-
-                dialogues.put(language, reasonToMessages);
-            }
-
-            this.dialogues = dialogues;
+            Dialogues dialogues = dialoguesOptional.get();
+            Map<String, Map<NpcChat.ChatReason, List<String>>> chats = new HashMap<>();
+            dialogues.dialogues.forEach((s, languageDialogue) -> {
+                Map<NpcChat.ChatReason, List<String>> chatReadonDialogues = new HashMap<>();
+                languageDialogue.languageDialogue.forEach((chatReason, chatReasonDialogue) -> {
+                    chatReadonDialogues.put(chatReason, chatReasonDialogue.sayings);
+                });
+                chats.put(s, chatReadonDialogues);
+            });
+            this.dialogues = chats;
         }
-
 
 
         public void markDialoguesDirty(UUID avoid) {
@@ -642,21 +614,18 @@ public class NPCEntity extends PathAwareEntity {
             return this.skinIdentifier;
         }
 
-        void writeNbt(NbtCompound nbt) {
-            nbt.putInt("basevariat", baseVariant);
+        void writeView(WriteView writeView) {
+            writeView.putInt("basevariat", baseVariant);
             if (skinByteArray != null) {
-                nbt.putByteArray("skin", skinByteArray);
+                writeView.put("skin", Skin.CODEC, new Skin(skinByteArray));
             }
         }
 
-        void readNbt(NbtCompound nbt) {
-            this.baseVariant = nbt.getInt("basevariat").get();
-            if (nbt.contains("skin")) {
-                Optional<byte[]> skinData = nbt.getByteArray("skin");
-                skinData.ifPresent(bytes -> this.skinByteArray = Arrays.copyOf(bytes, bytes.length));
-            }
+        void readNbt(ReadView readView) {
+            this.baseVariant = readView.getInt("basevariat", 0);
+            Optional<Skin> skin = readView.read("skin", Skin.CODEC);
+            skin.ifPresent(skin1 -> this.skinByteArray = skin1.skin);
         }
-
 
 
         public void setSlim(boolean slim) {
@@ -683,5 +652,59 @@ public class NPCEntity extends PathAwareEntity {
                 this.npcEntity.setCustomName(Text.literal(defaultModelNames[Random.create().nextInt(defaultModelNames.length)]));
 
         }
+    }
+
+    public record Dialogues(Map<String, LanguageDialogue> dialogues) {
+        public static final Codec<Dialogues> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.unboundedMap(Codec.STRING, LanguageDialogue.CODEC)
+                        .fieldOf("dialogues")
+                        .forGetter(o -> o.dialogues)
+        ).apply(instance, Dialogues::new));
+
+        public static Dialogues fromMap(Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues) {
+            Dialogues dialogues1 = new Dialogues(new HashMap<>());
+            dialogues.forEach((s, chatReasonListMap) -> {
+                dialogues1.dialogues.put(s, LanguageDialogue.fromMap(chatReasonListMap));
+            });
+            return dialogues1;
+        }
+    }
+
+    record LanguageDialogue(Map<NpcChat.ChatReason, ChatReasonDialogue> languageDialogue) {
+        public static final Codec<LanguageDialogue> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.unboundedMap(NpcChat.ChatReason.CODEC, ChatReasonDialogue.CODEC)
+                        .fieldOf("languague_dialogues")
+                        .forGetter(o -> o.languageDialogue)
+        ).apply(instance, LanguageDialogue::new));
+
+        public static LanguageDialogue fromMap(Map<NpcChat.ChatReason, List<String>> languageDialogue) {
+            LanguageDialogue languageDialogue1 = new LanguageDialogue(new HashMap<>());
+            languageDialogue.forEach((chatReason, chatReasonDialogue) -> {
+                languageDialogue1.languageDialogue.put(chatReason, new ChatReasonDialogue(chatReasonDialogue));
+            });
+            return languageDialogue1;
+        }
+    }
+
+    record ChatReasonDialogue(List<String> sayings) {
+        public static final Codec<ChatReasonDialogue> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.list(Codec.STRING).fieldOf("sayings").forGetter(o -> o.sayings)
+        ).apply(instance, ChatReasonDialogue::new));
+    }
+
+    record Skin(byte[] skin) {
+        public static final Codec<Skin> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.BYTE.listOf().fieldOf("skin").forGetter(o -> {
+                    List<Byte> byteList = new ArrayList<>();
+                    for (byte b : o.skin) {
+                        byteList.add(b);
+                    }
+                    return byteList;
+                })
+        ).apply(instance, bytes -> {
+            byte[] array = new byte[bytes.size()];
+            for (int i = 0; i < bytes.size(); i++) array[i] = bytes.get(i);
+            return new Skin(array);
+        }));
     }
 }

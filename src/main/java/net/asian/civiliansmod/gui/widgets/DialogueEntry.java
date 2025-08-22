@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.MultilineText;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 
 import java.util.ArrayList;
@@ -53,6 +54,8 @@ public class DialogueEntry extends AbstractDialogueEntry {
     public void render(DrawContext context, int x, int y, int mouseX, int mouseY, boolean hovered, float delta) {
         super.render(context, x, y, mouseX, mouseY, hovered, delta);
 
+        MatrixStack matrixStack = new MatrixStack();
+
         deleteWidget.setX(x + 100);
         deleteWidget.setY(y + 1);
         float scale = 0.5f;
@@ -61,10 +64,10 @@ public class DialogueEntry extends AbstractDialogueEntry {
 
         String textToDraw = MinecraftClient.getInstance().textRenderer.trimToWidth(dialogue, maxWidth - MinecraftClient.getInstance().textRenderer.getWidth("...")) + (MinecraftClient.getInstance().textRenderer.getWidth(dialogue) > maxWidth ? "..." : "");
 
-        context.getMatrices().push();
-        context.getMatrices().scale(scale, scale, 1.0F);
+        matrixStack.push();
+        matrixStack.scale(scale, scale, 1.0F);
         context.drawText(MinecraftClient.getInstance().textRenderer, textToDraw, (int) ((x + 3) / scale), (int) ((y + 4) / scale), 0xFFFFFF, true);
-        context.getMatrices().pop();
+        matrixStack.pop();
 
         deleteWidget.render(context, mouseX, mouseY, delta);
     }
