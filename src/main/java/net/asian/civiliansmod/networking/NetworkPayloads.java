@@ -26,7 +26,7 @@ public class NetworkPayloads {
 
 
         registerS2C(OpenScreenDialoguesPayload.ID, OpenScreenDialoguesPayload.CODEC);
-        registerS2C(ClientNpcSkinPayload.ID, ClientNpcSkinPayload.CODEC);
+        //registerS2C(ClientNpcSkinPayload.ID, ClientNpcSkinPayload.CODEC);
         registerS2C(NpcSpawnPayload.ID, NpcSpawnPayload.CODEC);
         registerS2C(DialogueSyncPayload.ID, DialogueSyncPayload.CODEC);
         registerS2C(SyncSkinPayload.ID, SyncSkinPayload.CODEC);
