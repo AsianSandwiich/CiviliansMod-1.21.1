@@ -21,7 +21,7 @@ public class NetworkPayloads {
         registerC2S(RemoveDialoguePayload.ID, RemoveDialoguePayload.CODEC);
         registerC2S(ChangeSkinPayload.ID, ChangeSkinPayload.CODEC);
         registerC2S(PlayerLanguagePayload.ID, PlayerLanguagePayload.CODEC);
-        registerC2S(CilentDialogueSyncPayload.ID, CilentDialogueSyncPayload.CODEC);
+        registerC2S(ClientDialogueSyncPayload.ID, ClientDialogueSyncPayload.CODEC);
         registerC2S(ChangeBaseSkinPayload.ID, ChangeBaseSkinPayload.CODEC);
 
 
