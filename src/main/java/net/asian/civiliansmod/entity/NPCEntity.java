@@ -92,7 +92,7 @@ public class NPCEntity extends PathAwareEntity {
             this.skinManager.setIdSkin(skinIdentifier);
         }
 
-        updateDialoguesTicks = 10;
+        updateDialoguesTicks = 20;
     }
 
     @Override
@@ -643,14 +643,14 @@ public class NPCEntity extends PathAwareEntity {
         }
 
         void writeNbt(NbtCompound nbt) {
-            nbt.putInt("basevariat", baseVariant);
+            nbt.putInt("basevariant", baseVariant);
             if (skinByteArray != null) {
                 nbt.putByteArray("skin", skinByteArray);
             }
         }
 
         void readNbt(NbtCompound nbt) {
-            this.baseVariant = nbt.getInt("basevariat").get();
+            this.baseVariant = nbt.getInt("basevariant").get();
             if (nbt.contains("skin")) {
                 Optional<byte[]> skinData = nbt.getByteArray("skin");
                 skinData.ifPresent(bytes -> this.skinByteArray = Arrays.copyOf(bytes, bytes.length));

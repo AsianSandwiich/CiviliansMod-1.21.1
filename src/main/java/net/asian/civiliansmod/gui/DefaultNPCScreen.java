@@ -10,7 +10,7 @@ import java.util.stream.IntStream;
 /**
  * Class to display default npc models
  */
-public class DefaultNPCScreen extends AbstratcNPCScreen {
+public class DefaultNPCScreen extends AbstractNPCScreen {
     public DefaultNPCScreen(NPCEntity npc) {
         super(npc);
     }
