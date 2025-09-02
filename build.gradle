@@ -20,26 +20,6 @@ repositories {
     // for more information about repositories.
 }
 
-loom {
-    splitEnvironmentSourceSets()
-
-    mods {
-        "civiliansmod" {
-            sourceSet sourceSets.main
-            sourceSet sourceSets.client
-        }
-    }
-    runs {
-        client {
-            client()
-            source(sourceSets.client)
-        }
-        server {
-            server()
-        }
-    }
-}
-
 fabricApi {
     configureDataGeneration()
 }
