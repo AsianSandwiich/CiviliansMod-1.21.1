@@ -8,7 +8,7 @@ import net.asian.civiliansmod.gui.CustomNPCScreen;
 import net.asian.civiliansmod.gui.DefaultNPCScreen;
 import net.asian.civiliansmod.gui.SlimNPCScreen;
 import java.util.Arrays;
-import net.asian.civiliansmod.networking.payload.npc.dialogue.CilentDialogueSyncPayload;
+import net.asian.civiliansmod.networking.payload.npc.dialogue.ClientDialogueSyncPayload;
 import net.asian.civiliansmod.networking.payload.npc.dialogue.DialogueSyncPayload;
 import net.asian.civiliansmod.networking.payload.npc.dialogue.OpenScreenDialoguesPayload;
 import net.asian.civiliansmod.networking.payload.npc.skin.ClientNpcSkinPayload;
@@ -329,7 +329,7 @@ public class NPCEntity extends PathAwareEntity {
         super.tick();
         if (getWorld().isClient) {
             if (--updateDialoguesTicks == 0) {
-                ClientPlayNetworking.send(new CilentDialogueSyncPayload(this.getUuid()));
+                ClientPlayNetworking.send(new ClientDialogueSyncPayload(this.getUuid()));
             }
         }
     }
