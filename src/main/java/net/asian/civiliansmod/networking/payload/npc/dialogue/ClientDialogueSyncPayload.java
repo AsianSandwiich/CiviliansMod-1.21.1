@@ -15,10 +15,12 @@ import java.util.UUID;
 public record ClientDialogueSyncPayload(UUID npcUuid) implements CustomPayload {
     public static final Id<ClientDialogueSyncPayload> ID = new Id<>(Identifier.of(CiviliansMod.MOD_ID, "dialogue_sync"));
 
-    public static final PacketCodec<RegistryByteBuf, ClientDialogueSyncPayload> CODEC = PacketCodec.tuple(
-            Uuids.PACKET_CODEC, ClientDialogueSyncPayload::npcUuid,
-            ClientDialogueSyncPayload::new
-    );
+    public static final PacketCodec<RegistryByteBuf, ClientDialogueSyncPayload>
+            CODEC = PacketCodec.tuple(
+                Uuids.PACKET_CODEC,
+                ClientDialogueSyncPayload::npcUuid,
+                ClientDialogueSyncPayload::new
+            );
 
     @Override
     public Id<? extends CustomPayload> getId() {
