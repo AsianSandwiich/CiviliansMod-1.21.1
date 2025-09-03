@@ -8,7 +8,7 @@ import net.asian.civiliansmod.gui.CustomNPCScreen;
 import net.asian.civiliansmod.gui.DefaultNPCScreen;
 import net.asian.civiliansmod.gui.SlimNPCScreen;
 import java.util.Arrays;
-import net.asian.civiliansmod.networking.payload.npc.dialogue.CilentDialogueSyncPayload;
+import net.asian.civiliansmod.networking.payload.npc.dialogue.ClientDialogueSyncPayload;
 import net.asian.civiliansmod.networking.payload.npc.dialogue.DialogueSyncPayload;
 import net.asian.civiliansmod.networking.payload.npc.dialogue.OpenScreenDialoguesPayload;
 import net.asian.civiliansmod.networking.payload.npc.skin.ClientNpcSkinPayload;
@@ -329,7 +329,7 @@ public class NPCEntity extends PathAwareEntity {
         super.tick();
         if (getWorld().isClient) {
             if (--updateDialoguesTicks == 0) {
-                ClientPlayNetworking.send(new CilentDialogueSyncPayload(this.getUuid()));
+                ClientPlayNetworking.send(new ClientDialogueSyncPayload(this.getUuid()));
             }
         }
     }
@@ -643,14 +643,14 @@ public class NPCEntity extends PathAwareEntity {
         }
 
         void writeNbt(NbtCompound nbt) {
-            nbt.putInt("basevariat", baseVariant);
+            nbt.putInt("basevariant", baseVariant);
             if (skinByteArray != null) {
                 nbt.putByteArray("skin", skinByteArray);
             }
         }
 
         void readNbt(NbtCompound nbt) {
-            this.baseVariant = nbt.getInt("basevariat").get();
+            this.baseVariant = nbt.getInt("basevariant").get();
             if (nbt.contains("skin")) {
                 Optional<byte[]> skinData = nbt.getByteArray("skin");
                 skinData.ifPresent(bytes -> this.skinByteArray = Arrays.copyOf(bytes, bytes.length));

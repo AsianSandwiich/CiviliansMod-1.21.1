@@ -16,7 +16,7 @@ import java.util.stream.IntStream;
 /**
  * Class to display custom models choose by the player
  */
-public class CustomNPCScreen extends AbstratcNPCScreen {
+public class CustomNPCScreen extends AbstractNPCScreen {
     public CustomNPCScreen(NPCEntity npc) {
         super(npc);
     }
