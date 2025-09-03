@@ -6,6 +6,7 @@ import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.widgets.TextButtonWidget;
 import net.asian.civiliansmod.mixin.TextFieldWidgetAccessor;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -34,7 +35,7 @@ public class AbstractDialogueEditionScreen extends Screen {
         int y = height / 2;
         super.init();
         this.textFieldWidget = new TextFieldWidget(this.client.textRenderer, x - 125, y, 250, 15, Text.literal(text));
-        ((TextFieldWidgetAccessor)textFieldWidget).setMaxLength(256);
+        ((TextFieldWidgetAccessor) textFieldWidget).setMaxLength(256);
         this.textFieldWidget.setText(text);
         TextButtonWidget cancelButton = new TextButtonWidget(x - 66, y + 30, 60, 15, Text.translatable("civilians.gui.cancel"), button -> MinecraftClient.getInstance().setScreen(parent), 0xFFFFFF, 0xFFFF0000);
 
@@ -47,7 +48,7 @@ public class AbstractDialogueEditionScreen extends Screen {
         int x = width / 2;
         int y = height / 2;
         super.renderBackground(context, mouseX, mouseY, delta);
-        context.drawTexture(RenderLayer::getGuiTextured,Identifier.of(CiviliansMod.MOD_ID, "textures/gui/edit_dialogue_screen.png"), x - 150, y - 35, 0, 0, 300, 70, 300, 70);
+        context.drawTexture(RenderPipelines.GUI_TEXTURED, Identifier.of(CiviliansMod.MOD_ID, "textures/gui/edit_dialogue_screen.png"), x - 150, y - 35, 0, 0, 300, 70, 300, 70);
     }
 
     @Override

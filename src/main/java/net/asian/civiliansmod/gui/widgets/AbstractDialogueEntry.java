@@ -1,6 +1,7 @@
 package net.asian.civiliansmod.gui.widgets;
 
 import net.asian.civiliansmod.chat.NpcChat;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.render.RenderLayer;
@@ -23,7 +24,7 @@ public class AbstractDialogueEntry extends ButtonWidget {
         }else{
             color = ColorHelper.fromFloats(1.0f, 1.0f, 1.0f, 1.0f);
         }
-        context.drawGuiTexture(RenderLayer::getGuiTextured, Identifier.ofVanilla("widget/button"), x, y, 112, 12, color);
+        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, Identifier.ofVanilla("widget/button"), x, y, 112, 12, color);
     }
 
     @Override

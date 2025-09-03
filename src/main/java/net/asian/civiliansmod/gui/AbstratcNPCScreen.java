@@ -1,5 +1,6 @@
 package net.asian.civiliansmod.gui;
 
+import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.networking.payload.npc.skin.ChangeBaseSkinPayload;
 import net.asian.civiliansmod.networking.payload.npc.skin.ChangeSkinPayload;
@@ -7,6 +8,7 @@ import net.asian.civiliansmod.networking.NPCDataPayload;
 import net.asian.civiliansmod.util.NPCUtil;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -14,8 +16,13 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.storage.NbtWriteView;
+import net.minecraft.storage.ReadView;
 import net.minecraft.text.Text;
+import net.minecraft.util.ErrorReporter;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.world.World;
 import net.minecraft.entity.EntityType;
@@ -23,6 +30,8 @@ import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.Entity;
 import net.asian.civiliansmod.custom_skins.SkinFolderManager;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -131,7 +140,7 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
 
         // Draw the container texture (centered)
         context.drawTexture(
-                RenderLayer::getGuiTextured,   // Specify the render layer function
+                RenderPipelines.GUI_TEXTURED,   // Specify the render layer function
                 guiTexture,             // Texture Identifier
                 containerX,             // X position
                 containerY,             // Y position
@@ -336,7 +345,12 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
                 if (!NPCUtil.getNPCTexture(clickedVariant).custom())
                     this.npc.getSkinManager().setBaseVariant(selectedVariantIndex);
 
-                npc.writeCustomDataToNbt(npc.writeNbt(new NbtCompound())); // Save changes to ensure they persist
+                try (ErrorReporter.Logging logging = new ErrorReporter.Logging(npc.getErrorReporterContext(), CiviliansMod.LOGGER)) {
+                    NbtWriteView nbtWriteView = NbtWriteView.create(logging, npc.getRegistryManager());
+                    npc.writeData(nbtWriteView);
+                } catch (Exception var11) {
+                    CiviliansMod.LOGGER.warn("Failed to save player data for {}", npc.getName().getString());
+                }
             }
         }
 
@@ -357,7 +371,6 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         if (mouseY < containerY || mouseY > containerY + containerHeight) {
             return -1; // Mouse click is entirely outside the vertical container area
         }
-
 
 
         int minIndex = Math.min(toRender.size() - this.startVariantIndex, 9);
@@ -437,7 +450,7 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
 
 
         // Render the entity
-        renderEntity(context.getMatrices(), previewX, previewY, 35, previewNPC, 180.0F);
+        renderEntity(previewX, previewY, 35, previewNPC, 180.0F);
     }
 
     @Override
@@ -536,7 +549,7 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
             return; // Skip rendering if out of bounds vertically
 
         // Render the entity preview
-        renderEntity(context.getMatrices(), x + ENTITY_PREVIEW_SIZE, y + (ENTITY_SPACING / 2), ENTITY_PREVIEW_SIZE, previewNPC, 145.0F);
+        renderEntity(x + ENTITY_PREVIEW_SIZE, y + (ENTITY_SPACING / 2), ENTITY_PREVIEW_SIZE, previewNPC, 145.0F);
         // Check if the mouse is hovering over this variant
         if (mouseX >= adjustedX && mouseX <= adjustedX + entityWidth
                 && mouseY >= adjustedY && mouseY <= adjustedY + entityHeight) {
@@ -613,7 +626,8 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         return previewNPC;
     }
 
-    private void renderEntity(MatrixStack matrices, int x, int y, int scale, Entity entity, float rotation) {
+    private void renderEntity(int x, int y, int scale, Entity entity, float rotation) {
+        MatrixStack matrices = new MatrixStack();
         EntityRenderDispatcher dispatcher = MinecraftClient.getInstance().getEntityRenderDispatcher();
 
         matrices.push();

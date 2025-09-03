@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mojang.serialization.Codec;
 import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.util.FolderUtil;
 import net.minecraft.client.MinecraftClient;
@@ -78,5 +79,7 @@ public class NpcChat {
             }
             throw new IllegalArgumentException("Unknown ChatReason: " + name);
         }
+
+        public static final Codec<ChatReason> CODEC = Codec.STRING.xmap(ChatReason::valueOf, ChatReason::name);
     }
 }
