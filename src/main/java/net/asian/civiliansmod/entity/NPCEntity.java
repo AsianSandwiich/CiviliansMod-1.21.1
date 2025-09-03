@@ -92,7 +92,7 @@ public class NPCEntity extends PathAwareEntity {
             this.skinManager.setIdSkin(skinIdentifier);
         }
 
-        updateDialoguesTicks = 20;
+        updateDialoguesTicks = 10;
     }
 
     @Override
