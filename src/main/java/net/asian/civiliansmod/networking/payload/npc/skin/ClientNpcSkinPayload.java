@@ -4,6 +4,8 @@ import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.util.NPCUtil;
 import net.asian.civiliansmod.util.SkinIdentifier;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
@@ -33,6 +35,7 @@ public record ClientNpcSkinPayload(int npcId, boolean slim, byte[] skin) impleme
         return ID;
     }
 
+    @Environment(EnvType.CLIENT)
     public void handlePacket(ClientPlayNetworking.Context context) {
         //if (skin.length != 16384) return;
 
