@@ -3,7 +3,6 @@ A script to scan through the versions directory and collect all folder names as 
 then output a json as the github action include matrix
 """
 __author__ = 'Fallen_Breath'
-# edit Skidam
 
 import json
 import os
@@ -32,12 +31,11 @@ def main():
 
 	matrix_entries = []
 	for subproject in subprojects:
-		mod_brand = subproject.split('-')[1]
-		mc_version = subproject.split('-')[0]
+		mod_brand = subproject.split('-')[-1]
+		assert mod_brand in ['fabric', 'forge', 'quilt']
 		matrix_entries.append({
 			'subproject': subproject,
 			'mod_brand': mod_brand,
-			'mc_version': mc_version,
 		})
 	matrix = {'include': matrix_entries}
 	with open(os.environ['GITHUB_OUTPUT'], 'w') as f:
