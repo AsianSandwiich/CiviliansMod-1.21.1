@@ -10,6 +10,12 @@ base {
     archivesName = project.archives_base_name
 }
 
+sourceSets {
+    client {
+        compileClasspath += main.compileClasspath
+        runtimeClasspath += main.runtimeClasspath
+    }
+}
 repositories {
     // Add repositories to retrieve artifacts from in here.
     // You should only use this when depending on other mods because
@@ -22,12 +28,20 @@ loom {
     splitEnvironmentSourceSets()
 
     mods {
-        "modid" {
+        "civiliansmod" {
             sourceSet sourceSets.main
             sourceSet sourceSets.client
         }
     }
-
+    runs {
+        client {
+            client()
+            source(sourceSets.client)
+        }
+        server {
+            server()
+        }
+    }
 }
 
 fabricApi {
@@ -41,9 +55,19 @@ dependencies {
 
     // Fabric API. This is technically optional, but you probably want it anyway.
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    clientImplementation sourceSets.main.output
 }
 
 processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": inputs.properties.version
+    }
+}
+
+processClientResources {
     inputs.property "version", project.version
 
     filesMatching("fabric.mod.json") {
