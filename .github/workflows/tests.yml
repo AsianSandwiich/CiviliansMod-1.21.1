@@ -19,7 +19,7 @@ jobs:
           path: |
             ~/.gradle/wrapper
             ./.gradle/loom-cache
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties', '**/gradle.properties', '**/*.accesswidener', 'settings.json') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle', '**/gradle-wrapper.properties', '**/gradle.properties', '**/*.accesswidener') }}
           restore-keys: |
             gradle-${{ runner.os }}
       - name: Run tests
