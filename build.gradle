@@ -20,6 +20,29 @@ repositories {
     // for more information about repositories.
 }
 
+loom {
+    splitEnvironmentSourceSets()
+
+    mods {
+        "civiliansmod" {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
+        }
+    }
+    runs {
+        client {
+            client()
+            source(sourceSets.client)
+        }
+        server {
+            server()
+        }
+    }
+}
+
+fabricApi {
+    configureDataGeneration()
+}
 dependencies {
     // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
