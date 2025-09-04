@@ -10,12 +10,6 @@ base {
     archivesName = project.archives_base_name
 }
 
-sourceSets {
-    client {
-        compileClasspath += main.compileClasspath
-        runtimeClasspath += main.runtimeClasspath
-    }
-}
 repositories {
     // Add repositories to retrieve artifacts from in here.
     // You should only use this when depending on other mods because
@@ -24,54 +18,26 @@ repositories {
     // for more information about repositories.
 }
 
-loom {
-    splitEnvironmentSourceSets()
-
-    mods {
-        "civiliansmod" {
-            sourceSet sourceSets.main
-            sourceSet sourceSets.client
-        }
-    }
-    runs {
-        client {
-            client()
-            source(sourceSets.client)
-        }
-        server {
-            server()
-        }
-    }
-}
-
-fabricApi {
-    configureDataGeneration()
-}
 dependencies {
     // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-    // Fabric API. This is technically optional, but you probably want it anyway.
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    clientImplementation sourceSets.main.output
+    //compile for client
+
 }
 
 processResources {
     inputs.property "version", project.version
+    inputs.property "minecraft_version", project.minecraft_version
+    inputs.property "loader_version", project.loader_version
 
     filesMatching("fabric.mod.json") {
-        expand "version": inputs.properties.version
-    }
-}
-
-processClientResources {
-    inputs.property "version", project.version
-
-    filesMatching("fabric.mod.json") {
-        expand "version": inputs.properties.version
+        expand "version": project.version,
+                "minecraft_version": project.minecraft_version,
+                "loader_version": project.loader_version
     }
 }
 
