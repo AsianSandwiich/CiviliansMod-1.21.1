@@ -3,11 +3,11 @@ A script to scan through all valid mod jars in build-artifacts.zip/$version/buil
 and generate an artifact summary table for that to GitHub action step summary
 """
 __author__ = 'Fallen_Breath'
+#updated from suerion for civilians mod
 
 import functools
 import glob
 import hashlib
-import json
 import os
 
 
@@ -31,42 +31,49 @@ def get_sha256_hash(file_path: str) -> str:
 
 def main():
 	target_subproject_env = os.environ.get('TARGET_SUBPROJECT', '')
-	target_subprojects = list(filter(None, target_subproject_env.split(',') if target_subproject_env != '' else []))
-	print('target_subprojects: {}'.format(target_subprojects))
+    target_subprojects = list(filter(None, target_subproject_env.split(',')))
+    print('target_subprojects: {}'.format(target_subprojects))
 
-	with open('settings.json') as f:
-		settings: dict = json.load(f)
+    if not target_subprojects:
+        current_branch = os.environ.get('GITHUB_REF_NAME', 'main')
+        subprojects = [current_branch]
+    else:
+        subprojects = target_subprojects
 
-	with open(os.environ['GITHUB_STEP_SUMMARY'], 'w') as f:
-		f.write('## Build Artifacts Summary\n\n')
-		f.write('| Subproject | for Minecraft | Files | SHA-256 |\n')
-		f.write('| --- | --- | --- | --- |\n')
+    # GitHub Step Summary schreiben
+    with open(os.environ['GITHUB_STEP_SUMMARY'], 'w') as f:
+        f.write('## Build Artifacts Summary\n\n')
+        f.write('| Subproject | for Minecraft | Files | SHA-256 |\n')
+        f.write('| --- | --- | --- | --- |\n')
 
-		warnings = []
-		for subproject in settings['versions']:
-			if len(target_subprojects) > 0 and subproject not in target_subprojects:
-				print('skipping {}'.format(subproject))
-				continue
-			game_versions = read_prop('versions/{}/gradle.properties'.format(subproject), 'game_versions')
-			game_versions = game_versions.strip().replace('\\n', ', ')
-			file_paths = glob.glob('build-artifacts/{}/build/libs/*.jar'.format(subproject))
-			file_paths = list(filter(lambda fp: not fp.endswith('-sources.jar') and not fp.endswith('-dev.jar'), file_paths))
-			if len(file_paths) == 0:
-				file_name = '*not found*'
-				sha256 = '*N/A*'
-			else:
-				file_name = '`{}`'.format(os.path.basename(file_paths[0]))
-				sha256 = '`{}`'.format(get_sha256_hash(file_paths[0]))
-				if len(file_paths) > 1:
-					warnings.append('Found too many build files in subproject {}: {}'.format(subproject, ', '.join(file_paths)))
+        warnings = []
+        for subproject in subprojects:
+            gradle_file = f'gradle.properties'
+            if not os.path.exists(gradle_file):
+                game_version = '*N/A*'
+            else:
+                game_version = read_prop(gradle_file, 'minecraft_version')
 
-			f.write('| {} | {} | {} | {} |\n'.format(subproject, game_versions, file_name, sha256))
+            file_paths = glob.glob(f'build-artifacts/{subproject}/build/libs/*.jar')
+            # Filter sources/dev jars
+            file_paths = [fp for fp in file_paths if not fp.endswith('-sources.jar') and not fp.endswith('-dev.jar')]
 
-		if len(warnings) > 0:
-			f.write('\n### Warnings\n\n')
-			for warning in warnings:
-				f.write('- {}\n'.format(warning))
+            if len(file_paths) == 0:
+                file_name = '*not found*'
+                sha256 = '*N/A*'
+            else:
+                file_name = '`{}`'.format(os.path.basename(file_paths[0]))
+                sha256 = '`{}`'.format(get_sha256_hash(file_paths[0]))
+                if len(file_paths) > 1:
+                    warnings.append(f'Found too many build files in subproject {subproject}: {", ".join(file_paths)}')
+
+            f.write(f'| {subproject} | {game_version} | {file_name} | {sha256} |\n')
+
+        if warnings:
+            f.write('\n### Warnings\n\n')
+            for warning in warnings:
+                f.write(f'- {warning}\n')
 
 
 if __name__ == '__main__':
-	main()
+    main()
