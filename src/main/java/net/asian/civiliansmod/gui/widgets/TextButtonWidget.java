@@ -8,6 +8,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ButtonTextures;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -45,22 +46,9 @@ public class TextButtonWidget extends ButtonWidget {
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         MinecraftClient client = MinecraftClient.getInstance();
-        context.setShaderColor(
-                (float) ((buttonColor & 0xFF0000) >> 16) / 256,
-                (float) ((buttonColor & 0xFF00) >> 8) / 256,
-                (float) (buttonColor & 0xFF) / 256,
-                this.alpha);
-        RenderSystem.enableBlend();
-        RenderSystem.enableDepthTest();
-        context.drawGuiTexture(TEXTURES.get(this.active, this.isSelected()), this.getX(), this.getY(), this.getWidth(), this.getHeight());
-        context.setShaderColor(
-                (float) ((textColor & 0xFF0000) >> 16) / 256,
-                (float) ((textColor & 0xFF00) >> 8) / 256,
-                (float) (textColor & 0xFF) / 256,
-                1.0F
-        );
+        context.drawGuiTexture(RenderLayer::getGuiTextured, TEXTURES.get(this.active, this.isSelected()), this.getX(), this.getY(), this.getWidth(), this.getHeight());
         int i = this.active ? 16777215 : 10526880;
         this.drawMessage(context, client.textRenderer, i | MathHelper.ceil(this.alpha * 255.0F) << 24);
-        context.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
+
 }

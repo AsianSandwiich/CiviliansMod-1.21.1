@@ -7,6 +7,7 @@ import net.asian.civiliansmod.entity.goal.CustomDoorGoal;
 import net.asian.civiliansmod.gui.CustomNPCScreen;
 import net.asian.civiliansmod.gui.DefaultNPCScreen;
 import net.asian.civiliansmod.gui.SlimNPCScreen;
+import java.util.Arrays;
 import net.asian.civiliansmod.networking.payload.npc.dialogue.ClientDialogueSyncPayload;
 import net.asian.civiliansmod.networking.payload.npc.dialogue.DialogueSyncPayload;
 import net.asian.civiliansmod.networking.payload.npc.dialogue.OpenScreenDialoguesPayload;
@@ -78,10 +79,6 @@ public class NPCEntity extends PathAwareEntity {
         return skinManager;
     }
 
-    public NameManager getNameManager() {
-        return nameManager;
-    }
-
     NameManager nameManager = new NameManager(this);
     NpcChatManager chatManager = new NpcChatManager(this);
     SkinManager skinManager = new SkinManager(this);
@@ -91,7 +88,7 @@ public class NPCEntity extends PathAwareEntity {
     public void onSpawnPacket(EntitySpawnS2CPacket packet) {
         super.onSpawnPacket(packet);
         SkinIdentifier skinIdentifier = NPCUtil.waitingSync.get(this.getId());
-        if(skinIdentifier != null) {
+        if (skinIdentifier != null) {
             this.skinManager.setIdSkin(skinIdentifier);
         }
 
@@ -101,11 +98,11 @@ public class NPCEntity extends PathAwareEntity {
     @Override
     public Packet<ClientPlayPacketListener> createSpawnPacket(EntityTrackerEntry entityTrackerEntry) {
         if (this.skinManager.skinByteArray == null) {
-            for (ServerPlayerEntity player : this.getWorld().getServer().getPlayerManager().getPlayerList()) {
+            for (ServerPlayerEntity player : Objects.requireNonNull(this.getWorld().getServer()).getPlayerManager().getPlayerList()) {
                 ServerPlayNetworking.send(player, new SyncSkinPayload(this.getId(), this.skinManager.baseVariant));
             }
         } else {
-            for (ServerPlayerEntity player : this.getWorld().getServer().getPlayerManager().getPlayerList()) {
+            for (ServerPlayerEntity player : Objects.requireNonNull(this.getWorld().getServer()).getPlayerManager().getPlayerList()) {
                 ServerPlayNetworking.send(player, new ClientNpcSkinPayload(this.getId(), this.skinManager.slim, this.skinManager.skinByteArray));
             }
         }
@@ -117,19 +114,6 @@ public class NPCEntity extends PathAwareEntity {
 
 
         if (!this.getWorld().isClient) {
-            // Assign default model and slim model names to the entity
-
-/*
-            int variant = this.random.nextInt(88);
-            this.setVariant(variant);
-            if (this.getVariant() <= 43) {
-                String randomName = defaultModelNames[this.random.nextInt(defaultModelNames.length)];
-                this.setCustomName(Text.literal(randomName));
-            } else {
-                String randomName = slimModelNames[this.random.nextInt(slimModelNames.length)];
-                this.setCustomName(Text.literal(randomName));
-            }
-*/
             this.setCustomNameVisible(true);
             this.sent = new HashSet<>();
         } else {
@@ -181,25 +165,24 @@ public class NPCEntity extends PathAwareEntity {
 
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
-        super.readCustomDataFromNbt(nbt); // Call parent to load standard entity data
+        super.readCustomDataFromNbt(nbt);
         if (nbt.contains("IsPaused")) {
-            this.setPaused(nbt.getBoolean("IsPaused")); // Load paused state
+            this.setPaused(nbt.getBoolean("IsPaused").orElse(false));
         }
         if (nbt.contains("IsFollowing")) {
-            this.setFollowing(nbt.getBoolean("IsFollowing"));
+            this.setFollowing(nbt.getBoolean("IsFollowing").orElse(false));
         }
-
         if (nbt.contains("dialogues")) {
             this.chatManager.setFromNbt(nbt.getCompound("dialogues"));
         }
-
         this.skinManager.readNbt(nbt);
     }
 
+
     public static DefaultAttributeContainer.Builder createAttributes() {
         return PathAwareEntity.createMobAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 20.0) // 20HP
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.3); // Normal speed
+                .add(EntityAttributes.MAX_HEALTH, 20.0) // 20HP
+                .add(EntityAttributes.MOVEMENT_SPEED, 0.3); // Adjusted speed
     }
 
     @Override
@@ -211,41 +194,48 @@ public class NPCEntity extends PathAwareEntity {
     }
 
     @Override
-    public boolean damage(DamageSource source, float amount) {
+    public boolean damage(ServerWorld world, DamageSource source, float amount) {
+        // Check if the entity is in a "paused" state (custom logic)
         if (isPaused()) {
-            return false; // Disallow damage and stop further logic if in "Stay" mode
+            return false; // Prevent damage and stop further processing
         }
-        boolean hurt = super.damage(source, amount);
 
+        // Call the new `super.damage` method with the correct parameters
+        boolean hurt = super.damage(world, source, amount);
+
+        // If the entity was damaged and there is an attacker
         if (hurt && source.getAttacker() != null) {
-            if (!this.getWorld().isClient()) {
+            if (!world.isClient()) {
                 Text nameText = this.getCustomName();
-                String npcName = nameText != null ? nameText.getString() : "NPC";
+                String npcName = (nameText != null) ? nameText.getString() : "NPC";
+
 
                 if (source.getAttacker() instanceof PlayerEntity player) {
                     String hitDialogue = chatManager.getRandomChat(CiviliansMod.playerLanguages.get(player.getUuid()), NpcChat.ChatReason.HURT);
-                    player.sendMessage(Text.literal(npcName + ": " + hitDialogue));
+                    player.sendMessage(Text.literal(npcName + ": " + hitDialogue), true);
+
                 }
 
+                // Define flee behavior: Calculate direction vector for fleeing
                 double dx = this.getX() - source.getAttacker().getX();
                 double dz = this.getZ() - source.getAttacker().getZ();
                 double fleeDistance = 12.0;
 
+                // Start moving the entity away from the attacker
                 this.getNavigation().startMovingTo(
                         this.getX() + dx * fleeDistance,
                         this.getY(),
                         this.getZ() + dz * fleeDistance,
-                        1.2
+                        1.2 // Movement speed when fleeing
                 );
             }
         }
 
-        return hurt;
+        return hurt; // Return whether the entity was successfully damaged
     }
 
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
-        System.out.println(this.getId());
 
         // Ensure the interaction is in the main hand
         if (hand == Hand.MAIN_HAND) {
@@ -277,7 +267,7 @@ public class NPCEntity extends PathAwareEntity {
                     double dz = player.getZ() - this.getZ();
                     targetYaw = (float) (Math.atan2(dz, dx) * (180F / Math.PI)) - 90F;
                     isTurning = true;
-                    this.lookAtPlayerTicks = 170; // NPC will look at the player for 5 seconds (170 ticks)
+                    this.lookAtPlayerTicks = 170;
 
                     return ActionResult.SUCCESS;
                 } else {
@@ -301,8 +291,9 @@ public class NPCEntity extends PathAwareEntity {
                 Text nameText = this.getCustomName();
                 String npcName = nameText != null ? nameText.getString() : "NPC";
 
+
                 String dialogue = chatManager.getRandomChat(CiviliansMod.playerLanguages.get(player.getUuid()), NpcChat.ChatReason.INTERACT);
-                player.sendMessage(Text.literal(npcName + ": " + dialogue));
+                player.sendMessage(Text.literal(npcName + ": " + dialogue), true);
             }
             return ActionResult.SUCCESS;
         }
@@ -528,26 +519,37 @@ public class NPCEntity extends PathAwareEntity {
             return mainCompound;
         }
 
-        public void setFromNbt(NbtCompound nbt) {
+        public void setFromNbt(Optional<NbtCompound> nbtOptional) {
+            if (nbtOptional.isEmpty()) {
+                return;
+            }
+
+            NbtCompound nbt = nbtOptional.get();
             Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues = new HashMap<>();
 
             for (String language : nbt.getKeys()) {
-                NbtCompound languageCompound = nbt.getCompound(language);
+                Optional<NbtCompound> languageCompoundOpt = nbt.getCompound(language);
+                if (!languageCompoundOpt.isPresent()) continue;
+
+                NbtCompound languageCompound = languageCompoundOpt.get();
                 Map<NpcChat.ChatReason, List<String>> reasonToMessages = new HashMap<>();
 
                 for (String reasonName : languageCompound.getKeys()) {
                     try {
                         NpcChat.ChatReason reason = NpcChat.ChatReason.fromName(reasonName);
-                        NbtList messageList = languageCompound.getList(reasonName, NbtElement.STRING_TYPE);
-                        List<String> messages = new ArrayList<>();
+                        Optional<NbtList> optionalList = languageCompound.getList(reasonName);
+                        if (optionalList.isPresent()) {
+                            NbtList messageList = optionalList.get();
+                            List<String> messages = new ArrayList<>();
 
-                        for (NbtElement element : messageList) {
-                            messages.add(element.asString());
+                            for (NbtElement element : messageList) {
+                                messages.add(element.asString().orElse(""));
+                            }
+
+                            reasonToMessages.put(reason, messages);
                         }
-
-                        reasonToMessages.put(reason, messages);
                     } catch (Exception e) {
-                        CiviliansMod.LOGGER.error("Unexpected reason: " + reasonName, e);
+                        CiviliansMod.LOGGER.error("Unexpected reason: {}", reasonName, e);
                     }
                 }
 
@@ -556,6 +558,8 @@ public class NPCEntity extends PathAwareEntity {
 
             this.dialogues = dialogues;
         }
+
+
 
         public void markDialoguesDirty(UUID avoid) {
             if (npc.getWorld() instanceof ServerWorld serverWorld) {
@@ -595,10 +599,6 @@ public class NPCEntity extends PathAwareEntity {
 
         SkinIdentifier skinIdentifier;
 
-        public int getBaseVariant() {
-            return baseVariant;
-        }
-
         public void setBaseVariant(int baseVariant) {
             this.baseVariant = baseVariant;
         }
@@ -615,21 +615,13 @@ public class NPCEntity extends PathAwareEntity {
             this.npcEntity = npcEntity;
             this.defaultSkin = true;
             this.baseVariant = npcEntity.random.nextInt(88);
-            if (baseVariant <= 43) {
-                this.slim = false;
-            } else {
-                this.slim = true;
-            }
+            this.slim = baseVariant > 43;
 
             npcEntity.nameManager.setRandomName(this.slim);
         }
 
         public boolean isSlim() {
             return slim;
-        }
-
-        public byte[] getSkinByteArray() {
-            return skinByteArray;
         }
 
         public void setSkinByteArray(byte[] skinByteArray) {
@@ -651,18 +643,21 @@ public class NPCEntity extends PathAwareEntity {
         }
 
         void writeNbt(NbtCompound nbt) {
-            nbt.putInt("basevariat", baseVariant);
-            if(skinByteArray != null) {
+            nbt.putInt("basevariant", baseVariant);
+            if (skinByteArray != null) {
                 nbt.putByteArray("skin", skinByteArray);
             }
         }
 
         void readNbt(NbtCompound nbt) {
-            this.baseVariant = nbt.getInt("basevariat");
-            if(nbt.contains("skin")) {
-                this.skinByteArray = nbt.getByteArray("skin");
+            this.baseVariant = nbt.getInt("basevariant").get();
+            if (nbt.contains("skin")) {
+                Optional<byte[]> skinData = nbt.getByteArray("skin");
+                skinData.ifPresent(bytes -> this.skinByteArray = Arrays.copyOf(bytes, bytes.length));
             }
         }
+
+
 
         public void setSlim(boolean slim) {
             this.slim = slim;

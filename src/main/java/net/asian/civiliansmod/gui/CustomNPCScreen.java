@@ -10,24 +10,19 @@ import net.minecraft.util.Identifier;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
 /**
  * Class to display custom models choose by the player
  */
-public class CustomNPCScreen extends AbstratcNPCScreen {
+public class CustomNPCScreen extends AbstractNPCScreen {
     public CustomNPCScreen(NPCEntity npc) {
         super(npc);
     }
 
-    public CustomNPCScreen(NPCEntity npc, int selected, int originalVariant) {
-        super(npc, selected, originalVariant);
-    }
-
-    public CustomNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex) {
-        super(npc, selected, defaultSkin, selectedVariantIndex);
+    public CustomNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex, boolean follow, boolean stay) {
+        super(npc, selected, defaultSkin, selectedVariantIndex, follow, stay);
     }
 
     @Override

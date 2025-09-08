@@ -8,8 +8,11 @@
   "authors": [
     "AsianSandwiich"
   ],
+  "contributors": [
+    "RodoFire"
+  ],
   "contact": {
-    "homepage": "https://modrinth.com/mod/civiliansmod",
+    "homepage": "https://modrinth.com/mod/civilians",
     "sources": "https://github.com/AsianSandwiich/CiviliansMod-1.21.1"
   },
   "license": "MIT",
@@ -38,8 +41,7 @@
         "client and server"
       ],
       "links": {
-        "modmenu.modrinth": "https://modrinth.com/mod/civiliansmod"
-
+        "modmenu.modrinth": "https://modrinth.com/mod/civilians"
       },
       "update_checker": true
     }

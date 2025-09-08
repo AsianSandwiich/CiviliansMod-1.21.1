@@ -18,12 +18,14 @@ import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
 
+import java.util.UUID;
+
 public record ClientNpcSkinPayload(int npcId, boolean slim, byte[] skin) implements CustomPayload {
     public static final CustomPayload.Id<ClientNpcSkinPayload> ID = new CustomPayload.Id<>(Identifier.of(CiviliansMod.MOD_ID, "client_npc_skin_update"));
 
     public static final PacketCodec<RegistryByteBuf, ClientNpcSkinPayload> CODEC = PacketCodec.tuple(
             PacketCodecs.INTEGER, ClientNpcSkinPayload::npcId,
-            PacketCodecs.BOOL, ClientNpcSkinPayload::slim,
+            PacketCodecs.BOOLEAN, ClientNpcSkinPayload::slim,
             PacketCodecs.BYTE_ARRAY, ClientNpcSkinPayload::skin,
             ClientNpcSkinPayload::new
     );
@@ -35,20 +37,18 @@ public record ClientNpcSkinPayload(int npcId, boolean slim, byte[] skin) impleme
 
     @Environment(EnvType.CLIENT)
     public void handlePacket(ClientPlayNetworking.Context context) {
-        //if (skin.length != 16384) return;
-
         ClientWorld clientWorld = context.player().clientWorld;
-
         Entity entityById = clientWorld.getEntityById(this.npcId);
-        System.out.println("p");
 
         try {
             NativeImage image = NativeImage.read(skin);
             if (image.getHeight() != 64 || image.getWidth() != 64) {
                 return;
             }
-            NativeImageBackedTexture dynamicTexture = new NativeImageBackedTexture(image);
-            Identifier skinIdentifier = MinecraftClient.getInstance().getTextureManager().registerDynamicTexture(CiviliansMod.MOD_ID + "_custom_skin", dynamicTexture);
+            String textureName = "custom_skin_" + UUID.randomUUID();
+            NativeImageBackedTexture dynamicTexture = new NativeImageBackedTexture(() -> textureName, image);
+            Identifier skinIdentifier = Identifier.of(CiviliansMod.MOD_ID, textureName);
+            MinecraftClient.getInstance().getTextureManager().registerTexture(skinIdentifier, dynamicTexture);
 
             image.close();
             SkinIdentifier skin1 = new SkinIdentifier(skinIdentifier, slim, true);

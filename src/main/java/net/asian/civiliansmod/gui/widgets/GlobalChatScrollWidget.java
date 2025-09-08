@@ -16,7 +16,6 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
             this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen));
         });
 
-        this.setRenderHeader(false, 0);
         this.setPosition(x, y);
     }
 
@@ -35,25 +34,25 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
 
 
     protected void renderScrollBar(DrawContext context) {
-        if (this.isScrollbarVisible()) {
+        if (this.visible) {
             int contentHeight = getTotalContentHeight();
             int visibleHeight = this.height;
 
             int scrollbarHeight = (int) ((float) visibleHeight * visibleHeight / (float) contentHeight);
             scrollbarHeight = MathHelper.clamp(scrollbarHeight, 32, visibleHeight - 8);
 
-            int scrollY = (int) (this.getScrollAmount() * (visibleHeight - scrollbarHeight) / (float) getMaxScroll()) + this.getY();
+            int scrollY = (int) (this.getScrollY() * (visibleHeight - scrollbarHeight) / (float) getMaxScrollY()) + this.getY();
             scrollY = Math.max(scrollY, this.getY());
 
             int scrollbarX = this.getScrollbarX();
-            RenderSystem.enableBlend();
+            // No need for blend states in modern versions as DrawContext handles it
             context.fill(scrollbarX, scrollY - 2, scrollbarX + 3, scrollY + scrollbarHeight, 0xFFAAAAAA);
-            RenderSystem.disableBlend();
         }
     }
 
+
     protected int getEntryTop(int index) {
-        int y = this.getY() - (int) this.getScrollAmount();
+        int y = this.getY() - (int) this.getScrollY();
         for (int i = 0; i < index; i++) {
             y += this.children().get(i).getHeight();
         }
@@ -64,22 +63,12 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
         return this.children().stream().mapToInt(ChatReasonEntryScrollContainer::getHeight).sum();
     }
 
-    @Override
-    protected int getMaxPosition() {
-        return getTotalContentHeight();
-    }
-
-    @Override
-    public int getMaxScroll() {
-        return Math.max(0, getTotalContentHeight() - this.height);
-    }
-
     protected void renderList(DrawContext context, int mouseX, int mouseY, float delta) {
         int rowLeft = this.getRowLeft();
         int rowWidth = this.getRowWidth();
         int entryCount = this.getEntryCount();
 
-        int y = this.getY() - (int) this.getScrollAmount();
+        int y = this.getY() - (int) this.getScrollY();
         for (int i = 0; i < entryCount; i++) {
             ChatReasonEntryScrollContainer entry = this.children().get(i);
             int entryHeight = entry.getHeight();
@@ -93,6 +82,21 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
     }
 
     @Override
+    public boolean mouseScrolled(double d, double e, double f, double g) {
+        if (!this.visible) {
+            return false;
+        } else {
+            this.setScrollY(this.getScrollY() - g * this.getDeltaYPerScroll());
+            return true;
+        }
+    }
+
+    @Override
+    public int getMaxScrollY() {
+        return getTotalContentHeight() - this.getHeight();
+    }
+
+    @Override
     protected int getScrollbarX() {
         return this.getX() + this.width - 3;
     }
@@ -103,11 +107,13 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
             if (dialogueEntryScrollContainer.onClick(mouseX, mouseY)) {
                 return;
             }
-            dialogueEntryScrollContainer.entries.forEach(entry -> {
-                entry.dialogueEntryList.forEach(dialogueEntry -> {
-                    dialogueEntry.onClick(mouseX, mouseY);
+            if (dialogueEntryScrollContainer.open) {
+                dialogueEntryScrollContainer.entries.forEach(entry -> {
+                    entry.dialogueEntryList.forEach(dialogueEntry -> {
+                        dialogueEntry.onClick(mouseX, mouseY);
+                    });
                 });
-            });
+            }
         });
     }
 }

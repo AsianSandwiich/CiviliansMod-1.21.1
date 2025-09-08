@@ -3,9 +3,6 @@ package net.asian.civiliansmod.gui;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.util.NPCUtil;
 import net.asian.civiliansmod.util.SkinIdentifier;
-import net.minecraft.util.Identifier;
-import org.apache.logging.log4j.util.PropertySource;
-
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -13,13 +10,13 @@ import java.util.stream.IntStream;
 /**
  * Class to display default npc models
  */
-public class DefaultNPCScreen extends AbstratcNPCScreen {
+public class DefaultNPCScreen extends AbstractNPCScreen {
     public DefaultNPCScreen(NPCEntity npc) {
         super(npc);
     }
 
-    public DefaultNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex) {
-        super(npc, selected, defaultSkin, selectedVariantIndex);
+    public DefaultNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex,boolean follow, boolean stay) {
+        super(npc, selected, defaultSkin, selectedVariantIndex, follow, stay);
     }
 
     @Override

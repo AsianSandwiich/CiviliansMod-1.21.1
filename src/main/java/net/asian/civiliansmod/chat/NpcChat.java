@@ -7,7 +7,7 @@ import com.google.gson.JsonParser;
 import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.util.FolderUtil;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.math.random.Random;
+
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,10 +17,7 @@ import java.util.*;
 public class NpcChat {
     public static Map<ChatReason, List<String>> dialogues = new LinkedHashMap<>();
 
-    public static String getRandomChat(ChatReason reason) {
-        List<String> chat = dialogues.get(reason);
-        return chat.get(Random.create().nextInt(chat.size()));
-    }
+
 
     public static void registerChat() {
         CiviliansMod.LOGGER.info("Registering dialogues");
