@@ -101,7 +101,7 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
         }
 
     }
-  
+
     public ModelPart getRandomPart(Random random) {
         return (ModelPart) Util.getRandom(this.parts, random);
     }
