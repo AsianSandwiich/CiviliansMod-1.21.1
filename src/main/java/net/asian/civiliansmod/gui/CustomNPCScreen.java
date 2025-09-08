@@ -17,7 +17,7 @@ import java.util.stream.IntStream;
 /**
  * Class to display custom models choose by the player
  */
-public class CustomNPCScreen extends AbstratcNPCScreen {
+public class CustomNPCScreen extends AbstractNPCScreen {
     public CustomNPCScreen(NPCEntity npc) {
         super(npc);
     }
@@ -26,8 +26,8 @@ public class CustomNPCScreen extends AbstratcNPCScreen {
         super(npc, selected, originalVariant);
     }
 
-    public CustomNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex) {
-        super(npc, selected, defaultSkin, selectedVariantIndex);
+    public CustomNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex, boolean follow, boolean stay) {
+        super(npc, selected, defaultSkin, selectedVariantIndex, follow, stay);
     }
 
     @Override

@@ -6,6 +6,7 @@ import net.minecraft.client.font.MultilineText;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -50,6 +51,6 @@ public class ConfirmScreen extends Screen {
         int x = width / 2;
         int y = height / 2;
         super.renderBackground(context, mouseX, mouseY, delta);
-        context.drawTexture(Identifier.of(CiviliansMod.MOD_ID, "textures/gui/edit_dialogue_screen.png"), x - 150, y - 35, 0, 0, 300, 70, 300, 70);
+        context.drawTexture(RenderLayer::getGuiTextured, Identifier.of(CiviliansMod.MOD_ID, "textures/gui/edit_dialogue_screen.png"), x - 150, y - 35, 0, 0, 300, 70, 300, 70);
     }
 }

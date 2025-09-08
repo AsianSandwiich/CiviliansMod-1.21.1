@@ -6,6 +6,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.random.Random;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 @Environment(EnvType.CLIENT)
@@ -104,22 +106,25 @@ public class NPCUtil {
                 try {
                     InputStream stream = Files.newInputStream(file);
                     try {
-                        NativeImage image = NativeImage.read(stream);
+                        byte[] skin = stream.readAllBytes();
+                        stream.close();
+                        NativeImage image = NativeImage.read(skin);
                         if (image.getHeight() != 64 || image.getWidth() != 64) {
                             return;
                         }
                         NativeImageBackedTexture dynamicTexture = new NativeImageBackedTexture(image);
-                        skins.add(new SkinIdentifier(MinecraftClient.getInstance().getTextureManager().registerDynamicTexture(CiviliansMod.MOD_ID + "_custom_skin", dynamicTexture), slim, true));
-                        images.put(skins.getLast(), image.getBytes());
-                        System.out.println(i.getAndIncrement());
+                        Identifier textureId = Identifier.of(CiviliansMod.MOD_ID, "custom_skin_" + UUID.randomUUID());
+                        MinecraftClient.getInstance().getTextureManager().registerTexture(textureId, dynamicTexture);
+                        skins.add(new SkinIdentifier(textureId, slim, true));
+                        images.put(skins.getLast(), skin);
+
+                        image.close();
                     } catch (Exception e) {
-                        CiviliansMod.LOGGER.error("error while converting skin files");
-                        e.printStackTrace();
+                        CiviliansMod.LOGGER.error("Error while converting skin files", e);
                     }
 
                 } catch (IOException e) {
-                    CiviliansMod.LOGGER.error("error while converting skin files");
-                    e.printStackTrace();
+                    CiviliansMod.LOGGER.error("Error while converting skin files", e);
                 }
             }
 

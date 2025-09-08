@@ -4,14 +4,13 @@ import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.networking.payload.npc.skin.ChangeBaseSkinPayload;
 import net.asian.civiliansmod.networking.payload.npc.skin.ChangeSkinPayload;
 import net.asian.civiliansmod.networking.NPCDataPayload;
-import net.asian.civiliansmod.networking.payload.npc.skin.SyncSkinPayload;
 import net.asian.civiliansmod.util.NPCUtil;
-import net.asian.civiliansmod.util.SkinIdentifier;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.nbt.NbtCompound;
@@ -27,7 +26,7 @@ import net.asian.civiliansmod.custom_skins.SkinFolderManager;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
+public abstract class AbstractNPCScreen extends AbstractConfigScreen {
     private final NPCEntity npc;
 
     // Layout constants
@@ -53,25 +52,30 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
      */
     boolean save = false;
 
+    boolean follow;
+    boolean stay;
+
     int startVariantIndex = 0;
 
     List<Integer> toRender = new ArrayList<>();
 
 
-    public AbstratcNPCScreen(NPCEntity npc) {
+    public AbstractNPCScreen(NPCEntity npc) {
         this(npc, -1, NPCUtil.getSkins().indexOf(npc.getSkinManager().getIdSkin()));
     }
 
-    public AbstratcNPCScreen(NPCEntity npc, int selected, int defaultSkin) {
+    public AbstractNPCScreen(NPCEntity npc, int selected, int defaultSkin) {
         super(npc, Text.literal("Change NPC Variant"));
         this.npc = npc;
         this.selectedVariant = selected;
         toRender = getSkinsToRender();
         this.originalVariant = NPCUtil.getSkins().indexOf(npc.getSkinManager().getIdSkin()); // Save the current variant to initialize the preview
         this.defaultSkin = defaultSkin;
+        this.follow = npc.isFollowing();
+        this.stay = npc.isPaused();
     }
 
-    public AbstratcNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex) {
+    public AbstractNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex, boolean follow, boolean stay) {
         super(npc, Text.literal("Change NPC Variant"));
         this.npc = npc;
         this.selectedVariant = selected;
@@ -79,6 +83,8 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         this.selectedVariantIndex = selectedVariantIndex;
         this.originalVariant = NPCUtil.getSkins().indexOf(npc.getSkinManager().getIdSkin()); // Save the current variant to initialize the preview
         this.defaultSkin = defaultSkin;
+        this.follow = follow;
+        this.stay = stay;
     }
 
     protected abstract List<Integer> getSkinsToRender();
@@ -124,7 +130,18 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         int containerY = (this.height - containerHeight) / 2;
 
         // Draw the container texture (centered)
-        context.drawTexture(guiTexture, containerX, containerY, 0, 0, containerWidth, containerHeight, containerWidth, containerHeight);
+        context.drawTexture(
+                RenderLayer::getGuiTextured,   // Specify the render layer function
+                guiTexture,             // Texture Identifier
+                containerX,             // X position
+                containerY,             // Y position
+                0,                      // U coordinate of the texture
+                0,                      // V coordinate of the texture
+                containerWidth,         // Width of the region to draw
+                containerHeight,        // Height of the region to draw
+                containerWidth,         // Width of the texture
+                containerHeight         // Height of the texture
+        );
     }
 
     @Override
@@ -169,16 +186,16 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         int containerY = (this.height - containerHeight) / 2;
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Wide"),
-                button -> MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex))
+                button -> MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex, follow, stay))
         ).dimensions(containerX + 82, containerY + 22, 39, 12).build());
 
         // Add Slim tab button
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Slim"),
-                button -> MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex))
+                button -> MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex, follow, stay))
         ).dimensions(containerX + 121, containerY + 22, 40, 12).build());
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Custom"),
-                button -> MinecraftClient.getInstance().setScreen(new CustomNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex))
+                button -> MinecraftClient.getInstance().setScreen(new CustomNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex, follow, stay))
         ).dimensions(containerX + 161, containerY + 22, 39, 12).build());
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Save"), button -> {
@@ -241,6 +258,8 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         if (MinecraftClient.getInstance().player != null) {
             if (!save) {
                 npc.getSkinManager().setIdSkin(NPCUtil.getNPCTexture(this.defaultSkin));
+                npc.setFollowing(follow);
+                npc.setPaused(stay);
                 super.close();
                 return;
             }
@@ -614,8 +633,7 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
 
         dispatcher.render(
                 entity,
-                0.0, // X position in world space
-                0.0, // Y position in world space
+                0.0,// Y position in world space
                 0.0, // Z position in world space
                 0.0F, // No head yaw
                 1.0F, // Partial tick (unused in GUI)

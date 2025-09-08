@@ -91,12 +91,11 @@ public class CustomDoorGoal extends Goal {
             for (int dz = -2; dz <= 2; dz++) {
                 BlockPos pos = npcPos.add(dx, 0, dz);
                 BlockState state = npc.getWorld().getBlockState(pos);
-                if (state.getBlock() instanceof DoorBlock) {
-                    return pos; // Return the first detected door
+                if (state.getBlock() instanceof DoorBlock && state.contains(DoorBlock.FACING)) {
+                    return pos; // Return the first detected valid door with FACING property
                 }
             }
         }
-
         return null;
     }
 
@@ -117,11 +116,22 @@ public class CustomDoorGoal extends Goal {
     }
 
     private Vec3d getTargetPosition() {
-        // Calculate a position beyond or inside the door for navigation
-        BlockState doorState = npc.getWorld().getBlockState(targetDoorPos);
-        Direction facing = doorState.get(DoorBlock.FACING);
-        if (isNavigating) {
+        // Ensure the targetDoorPos and corresponding BlockState are valid
+        if (targetDoorPos == null) {
+            return npc.getPos(); // Fallback to current NPC position
+        }
 
+        BlockState doorState = npc.getWorld().getBlockState(targetDoorPos);
+
+        // Check if the block state is a DoorBlock and supports the 'FACING' property
+        if (!(doorState.getBlock() instanceof DoorBlock) || !doorState.contains(DoorBlock.FACING)) {
+            return npc.getPos(); // Fallback to NPC's current position
+        }
+
+        Direction facing = doorState.get(DoorBlock.FACING);
+
+        if (isNavigating) {
+            // Navigate to the other side of the door
             return new Vec3d(
                     targetDoorPos.getX() + 0.5 + facing.getOffsetX() * 2,
                     targetDoorPos.getY(),

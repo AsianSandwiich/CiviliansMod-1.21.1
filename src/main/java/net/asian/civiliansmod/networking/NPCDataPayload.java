@@ -21,8 +21,8 @@ public record NPCDataPayload(UUID entityUuid, String customName, boolean isPause
     public static final PacketCodec<RegistryByteBuf, NPCDataPayload> CODEC = PacketCodec.tuple(
             Uuids.PACKET_CODEC, NPCDataPayload::entityUuid,
             PacketCodecs.STRING, NPCDataPayload::customName,
-            PacketCodecs.BOOL, NPCDataPayload::isPaused, // Encodes/decodes the 'isPaused' state
-            PacketCodecs.BOOL, NPCDataPayload::isFollowing, // Encodes/decodes the 'isFollowing' state
+            PacketCodecs.BOOLEAN, NPCDataPayload::isPaused, // Encodes/decodes the 'isPaused' state
+            PacketCodecs.BOOLEAN, NPCDataPayload::isFollowing, // Encodes/decodes the 'isFollowing' state
             NPCDataPayload::new
     );
 

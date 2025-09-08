@@ -24,7 +24,7 @@ public record ChangeSkinPayload(UUID npcUuid, boolean slim, byte[] skin) impleme
 
     public static final PacketCodec<RegistryByteBuf, ChangeSkinPayload> CODEC = PacketCodec.tuple(
             Uuids.PACKET_CODEC, ChangeSkinPayload::npcUuid,
-            PacketCodecs.BOOL, ChangeSkinPayload::slim,
+            PacketCodecs.BOOLEAN, ChangeSkinPayload::slim,
             PacketCodecs.BYTE_ARRAY, ChangeSkinPayload::skin,
             ChangeSkinPayload::new
     );

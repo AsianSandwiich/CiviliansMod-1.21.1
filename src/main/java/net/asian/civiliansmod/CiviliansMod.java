@@ -1,5 +1,6 @@
 package net.asian.civiliansmod;
 
+import net.asian.civiliansmod.entity.ModEntities;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.networking.CustomC2SNetworking;
 import net.asian.civiliansmod.networking.NetworkPayloads;
@@ -8,11 +9,6 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.EntityTrackingEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnGroup;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,20 +24,12 @@ public class CiviliansMod implements ModInitializer {
 
     public static Map<UUID, String> playerLanguages = new HashMap<>();
 
-    public static final EntityType<NPCEntity> NPC_ENTITY = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier.of(MOD_ID, "npc"),
-            EntityType.Builder
-                    .create(NPCEntity::new, SpawnGroup.CREATURE)
-                    .dimensions(0.6f, 1.8f)
-                    .build()
-    );
-
+  
     @Override
     public void onInitialize() {
         LOGGER.info("Initializing CiviliansMod");
 
-        FabricDefaultAttributeRegistry.register(NPC_ENTITY, NPCEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.NPC_ENTITY, NPCEntity.createAttributes());
 
         ModItems.registerModItems();
 

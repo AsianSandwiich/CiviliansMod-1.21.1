@@ -91,7 +91,7 @@ public class NPCEntity extends PathAwareEntity {
     public void onSpawnPacket(EntitySpawnS2CPacket packet) {
         super.onSpawnPacket(packet);
         SkinIdentifier skinIdentifier = NPCUtil.waitingSync.get(this.getId());
-        if(skinIdentifier != null) {
+        if (skinIdentifier != null) {
             this.skinManager.setIdSkin(skinIdentifier);
         }
 
@@ -198,8 +198,8 @@ public class NPCEntity extends PathAwareEntity {
 
     public static DefaultAttributeContainer.Builder createAttributes() {
         return PathAwareEntity.createMobAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 20.0) // 20HP
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.3); // Normal speed
+                .add(EntityAttributes.MAX_HEALTH, 20.0) // 20HP
+                .add(EntityAttributes.MOVEMENT_SPEED, 0.3); // Adjusted speed
     }
 
     @Override
@@ -211,41 +211,48 @@ public class NPCEntity extends PathAwareEntity {
     }
 
     @Override
-    public boolean damage(DamageSource source, float amount) {
+    public boolean damage(ServerWorld world, DamageSource source, float amount) {
+        // Check if the entity is in a "paused" state (custom logic)
         if (isPaused()) {
-            return false; // Disallow damage and stop further logic if in "Stay" mode
+            return false; // Prevent damage and stop further processing
         }
-        boolean hurt = super.damage(source, amount);
 
+        // Call the new `super.damage` method with the correct parameters
+        boolean hurt = super.damage(world, source, amount);
+
+        // If the entity was damaged and there is an attacker
         if (hurt && source.getAttacker() != null) {
-            if (!this.getWorld().isClient()) {
+            if (!world.isClient()) {
                 Text nameText = this.getCustomName();
-                String npcName = nameText != null ? nameText.getString() : "NPC";
+                String npcName = (nameText != null) ? nameText.getString() : "NPC";
+
 
                 if (source.getAttacker() instanceof PlayerEntity player) {
                     String hitDialogue = chatManager.getRandomChat(CiviliansMod.playerLanguages.get(player.getUuid()), NpcChat.ChatReason.HURT);
-                    player.sendMessage(Text.literal(npcName + ": " + hitDialogue));
+                    player.sendMessage(Text.literal(npcName + ": " + hitDialogue), true);
+
                 }
 
+                // Define flee behavior: Calculate direction vector for fleeing
                 double dx = this.getX() - source.getAttacker().getX();
                 double dz = this.getZ() - source.getAttacker().getZ();
                 double fleeDistance = 12.0;
 
+                // Start moving the entity away from the attacker
                 this.getNavigation().startMovingTo(
                         this.getX() + dx * fleeDistance,
                         this.getY(),
                         this.getZ() + dz * fleeDistance,
-                        1.2
+                        1.2 // Movement speed when fleeing
                 );
             }
         }
 
-        return hurt;
+        return hurt; // Return whether the entity was successfully damaged
     }
 
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
-        System.out.println(this.getId());
 
         // Ensure the interaction is in the main hand
         if (hand == Hand.MAIN_HAND) {
@@ -277,7 +284,7 @@ public class NPCEntity extends PathAwareEntity {
                     double dz = player.getZ() - this.getZ();
                     targetYaw = (float) (Math.atan2(dz, dx) * (180F / Math.PI)) - 90F;
                     isTurning = true;
-                    this.lookAtPlayerTicks = 170; // NPC will look at the player for 5 seconds (170 ticks)
+                    this.lookAtPlayerTicks = 170;
 
                     return ActionResult.SUCCESS;
                 } else {
@@ -301,8 +308,9 @@ public class NPCEntity extends PathAwareEntity {
                 Text nameText = this.getCustomName();
                 String npcName = nameText != null ? nameText.getString() : "NPC";
 
+
                 String dialogue = chatManager.getRandomChat(CiviliansMod.playerLanguages.get(player.getUuid()), NpcChat.ChatReason.INTERACT);
-                player.sendMessage(Text.literal(npcName + ": " + dialogue));
+                player.sendMessage(Text.literal(npcName + ": " + dialogue), true);
             }
             return ActionResult.SUCCESS;
         }
@@ -651,15 +659,15 @@ public class NPCEntity extends PathAwareEntity {
         }
 
         void writeNbt(NbtCompound nbt) {
-            nbt.putInt("basevariat", baseVariant);
-            if(skinByteArray != null) {
+            nbt.putInt("basevariant", baseVariant);
+            if (skinByteArray != null) {
                 nbt.putByteArray("skin", skinByteArray);
             }
         }
 
         void readNbt(NbtCompound nbt) {
-            this.baseVariant = nbt.getInt("basevariat");
-            if(nbt.contains("skin")) {
+            this.baseVariant = nbt.getInt("basevariant");
+            if (nbt.contains("skin")) {
                 this.skinByteArray = nbt.getByteArray("skin");
             }
         }

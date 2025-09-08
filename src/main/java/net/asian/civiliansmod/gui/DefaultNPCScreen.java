@@ -13,13 +13,13 @@ import java.util.stream.IntStream;
 /**
  * Class to display default npc models
  */
-public class DefaultNPCScreen extends AbstratcNPCScreen {
+public class DefaultNPCScreen extends AbstractNPCScreen {
     public DefaultNPCScreen(NPCEntity npc) {
         super(npc);
     }
 
-    public DefaultNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex) {
-        super(npc, selected, defaultSkin, selectedVariantIndex);
+    public DefaultNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex,boolean follow, boolean stay) {
+        super(npc, selected, defaultSkin, selectedVariantIndex, follow, stay);
     }
 
     @Override
