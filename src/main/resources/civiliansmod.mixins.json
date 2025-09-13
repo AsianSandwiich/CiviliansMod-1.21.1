@@ -4,8 +4,7 @@
   "package": "net.asian.civiliansmod.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "LanguageOptionScreenMixin",
-    "TextFieldWidgetAccessor"
+     "LanguageOptionScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

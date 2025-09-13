@@ -10,8 +10,6 @@ import net.minecraft.util.math.random.Random;
 import java.util.List;
 
 public class NPCModel extends BipedEntityModel<NPCRenderState> {
-
-
     private final List<ModelPart> parts;
     public final ModelPart leftSleeve;
     public final ModelPart rightSleeve;
@@ -20,9 +18,10 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
     public final ModelPart jacket;
     private final boolean thinArms;
 
-    public NPCModel(ModelPart modelPart, boolean bl) {
+    public NPCModel(ModelPart modelPart, boolean thinArms) {
         super(modelPart, RenderLayer::getEntityTranslucent);
-        this.thinArms = bl;
+        this.thinArms = thinArms;
+
         this.leftSleeve = this.leftArm.getChild("left_sleeve");
         this.rightSleeve = this.rightArm.getChild("right_sleeve");
         this.leftPants = this.leftLeg.getChild("left_pants");
@@ -31,11 +30,11 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
         this.parts = List.of(this.head, this.body, this.leftArm, this.rightArm, this.leftLeg, this.rightLeg);
     }
 
-    public static ModelData getTexturedModelData(Dilation dilation, boolean bl) {
+    public static ModelData getTexturedModelData(Dilation dilation, boolean thinArms) {
         ModelData modelData = BipedEntityModel.getModelData(dilation, 0.0F);
         ModelPartData modelPartData = modelData.getRoot();
 
-        if (bl) { // Thin arms
+        if (thinArms) {
             ModelPartData leftArm = modelPartData.addChild("left_arm",
                     ModelPartBuilder.create().uv(32, 48)
                             .cuboid(-1.0F, -2.0F, -2.0F, 3.0F, 12.0F, 4.0F, dilation),
@@ -55,7 +54,7 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
                     ModelPartBuilder.create().uv(40, 32)
                             .cuboid(-2.0F, -2.0F, -2.0F, 3.0F, 12.0F, 4.0F, dilation.add(0.25F)),
                     ModelTransform.NONE);
-        } else { // Wide arms
+        } else {
             ModelPartData leftArm = modelPartData.addChild("left_arm",
                     ModelPartBuilder.create().uv(32, 48)
                             .cuboid(-1.0F, -2.0F, -2.0F, 4.0F, 12.0F, 4.0F, dilation),
@@ -105,33 +104,35 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
 
         return modelData;
     }
-  
+
+    @Override
     public void setAngles(NPCRenderState playerEntityRenderState) {
-        boolean bl = !playerEntityRenderState.spectator;
-        this.body.visible = bl;
-        this.rightArm.visible = bl;
-        this.leftArm.visible = bl;
-        this.rightLeg.visible = bl;
-        this.leftLeg.visible = bl;
+        super.setAngles(playerEntityRenderState);
+
+        boolean visible = !playerEntityRenderState.spectator;
+        this.body.visible = visible;
+        this.rightArm.visible = visible;
+        this.leftArm.visible = visible;
+        this.rightLeg.visible = visible;
+        this.leftLeg.visible = visible;
         this.hat.visible = playerEntityRenderState.hatVisible;
         this.jacket.visible = playerEntityRenderState.jacketVisible;
         this.leftPants.visible = playerEntityRenderState.leftPantsLegVisible;
         this.rightPants.visible = playerEntityRenderState.rightPantsLegVisible;
         this.leftSleeve.visible = playerEntityRenderState.leftSleeveVisible;
         this.rightSleeve.visible = playerEntityRenderState.rightSleeveVisible;
-        super.setAngles(playerEntityRenderState);
     }
 
-    public void setVisible(boolean bl) {
-        super.setVisible(bl);
-        this.leftSleeve.visible = bl;
-        this.rightSleeve.visible = bl;
-        this.leftPants.visible = bl;
-        this.rightPants.visible = bl;
-        this.jacket.visible = bl;
+    public void setVisible(boolean visible) {
+        super.setVisible(visible);
+        this.leftSleeve.visible = visible;
+        this.rightSleeve.visible = visible;
+        this.leftPants.visible = visible;
+        this.rightPants.visible = visible;
+        this.jacket.visible = visible;
     }
 
     public ModelPart getRandomPart(Random random) {
-        return (ModelPart) Util.getRandom(this.parts, random);
+        return Util.getRandom(this.parts, random);
     }
 }
