@@ -4,7 +4,8 @@
   "package": "net.asian.civiliansmod.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-     "LanguageOptionScreenMixin"
+    "LanguageOptionScreenMixin",
+    "NPCRenderStateCompatMixin"
   ],
   "injectors": {
     "defaultRequire": 1

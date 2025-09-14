@@ -1,16 +1,21 @@
 package net.asian.civiliansmod.model;
 
 import net.asian.civiliansmod.renderer.NPCRenderState;
+import com.mojang.logging.LogUtils;
 import net.minecraft.client.model.*;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.random.Random;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.ModContainer;
 
 import java.util.List;
+import org.slf4j.Logger;
+import java.util.Optional;
 
 public class NPCModel extends BipedEntityModel<NPCRenderState> {
-
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     private final List<ModelPart> parts;
     public final ModelPart leftSleeve;
@@ -109,7 +114,16 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
 
     @Override
     public void setAngles(NPCRenderState playerEntityRenderState) {
-        super.setAngles(playerEntityRenderState);
+        if (playerEntityRenderState == null) return;
+
+        try {
+            super.setAngles(playerEntityRenderState);
+        } catch (NullPointerException e) {
+            // Compat issues in Log
+            String culprit = findCulpritMod(e);
+            LOGGER.warn("[Civilians] Another Mod tried to inject into Civilians code via Mixin! "
+                    + "Please report this to the Mod Developer for compatibility. Likely culprit: {}", culprit, e);
+        }
 
         boolean visible = !playerEntityRenderState.spectator;
         this.body.visible = visible;
@@ -123,7 +137,6 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
         this.rightPants.visible = playerEntityRenderState.rightPantsLegVisible;
         this.leftSleeve.visible = playerEntityRenderState.leftSleeveVisible;
         this.rightSleeve.visible = playerEntityRenderState.rightSleeveVisible;
-        super.setAngles(playerEntityRenderState);
     }
 
     public void setVisible(boolean visible) {
@@ -137,5 +150,29 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
 
     public ModelPart getRandomPart(Random random) {
         return Util.getRandom(this.parts, random);
+    }
+
+    private String findCulpritMod(Throwable t) {
+        for (StackTraceElement ste : t.getStackTrace()) {
+            String classPartName = ste.getClassName();
+
+            // ignore own and vanilla part
+            if (classPartName.startsWith("net.asian.civiliansmod")) continue;
+            if (classPartName.startsWith("net.minecraft")) continue;
+
+            for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
+                String modId = mod.getMetadata().getId();
+                if (classPartName.startsWith(modId)) { // match with modID package
+                    return modId;
+                }
+            }
+            String[] parts = classPartName.split("\\.");
+            for (String part : parts) {
+                if (part.equals("com") || part.equals("org") || part.equals("net")) continue;
+                return part;
+            }
+            return classPartName;
+        }
+        return "Unknown Mod";
     }
 }
