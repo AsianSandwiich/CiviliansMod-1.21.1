@@ -153,8 +153,8 @@ public class NPCEntity extends PathAwareEntity {
     }
 
     @Override
-    public void writeCustomDataToNbt(NbtCompound nbt) {
-        super.writeCustomDataToNbt(nbt);
+    public void writeCustomData(NbtCompound nbt) {
+        super.writeCustomData(nbt);
 
         // Save the variant to NBT
         nbt.putBoolean("IsPaused", this.isPaused());
@@ -164,8 +164,8 @@ public class NPCEntity extends PathAwareEntity {
     }
 
     @Override
-    public void readCustomDataFromNbt(NbtCompound nbt) {
-        super.readCustomDataFromNbt(nbt);
+    public void readCustomData(NbtCompound nbt) {
+        super.readCustomData(nbt);
         if (nbt.contains("IsPaused")) {
             this.setPaused(nbt.getBoolean("IsPaused").orElse(false));
         }
