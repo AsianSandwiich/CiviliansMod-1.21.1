@@ -18,9 +18,9 @@ public class DeleteWidget extends ButtonWidget {
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         if (isMouseOver(mouseX, mouseY)) {
-            context.drawTexture(RenderLayer::getGuiTextured, BUTTON_HOVERED, this.getX(), this.getY(), 0, 0,  this.width, this.height, this.width, this.height, 0xFFFF0000);
+            context.drawTexture(RenderLayer::getGui, BUTTON_HOVERED, this.getX(), this.getY(), 0, 0,  this.width, this.height, this.width, this.height, 0xFFFF0000);
         } else {
-            context.drawTexture(RenderLayer::getGuiTextured, BUTTON, this.getX(), this.getY(), 0, 0,  this.width, this.height, this.width, this.height);
+            context.drawTexture(RenderLayer::getGui, BUTTON, this.getX(), this.getY(), 0, 0,  this.width, this.height, this.width, this.height);
         }
     }
 }

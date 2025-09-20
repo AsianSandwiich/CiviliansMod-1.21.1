@@ -26,7 +26,7 @@ import net.asian.civiliansmod.custom_skins.SkinFolderManager;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
+public abstract class AbstractNPCScreen extends AbstractConfigScreen {
     private final NPCEntity npc;
 
     // Layout constants
@@ -60,11 +60,11 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
     List<Integer> toRender = new ArrayList<>();
 
 
-    public AbstratcNPCScreen(NPCEntity npc) {
+    public AbstractNPCScreen(NPCEntity npc) {
         this(npc, -1, NPCUtil.getSkins().indexOf(npc.getSkinManager().getIdSkin()));
     }
 
-    public AbstratcNPCScreen(NPCEntity npc, int selected, int defaultSkin) {
+    public AbstractNPCScreen(NPCEntity npc, int selected, int defaultSkin) {
         super(npc, Text.literal("Change NPC Variant"));
         this.npc = npc;
         this.selectedVariant = selected;
@@ -75,7 +75,7 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         this.stay = npc.isPaused();
     }
 
-    public AbstratcNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex, boolean follow, boolean stay) {
+    public AbstractNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex, boolean follow, boolean stay) {
         super(npc, Text.literal("Change NPC Variant"));
         this.npc = npc;
         this.selectedVariant = selected;
@@ -131,7 +131,7 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
 
         // Draw the container texture (centered)
         context.drawTexture(
-                RenderLayer::getGuiTextured,   // Specify the render layer function
+                RenderLayer::getGui,   // Specify the render layer function
                 guiTexture,             // Texture Identifier
                 containerX,             // X position
                 containerY,             // Y position
@@ -336,7 +336,9 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
                 if (!NPCUtil.getNPCTexture(clickedVariant).custom())
                     this.npc.getSkinManager().setBaseVariant(selectedVariantIndex);
 
-                npc.writeCustomDataToNbt(npc.writeNbt(new NbtCompound())); // Save changes to ensure they persist
+                NbtCompound nbt = new NbtCompound();
+                npc.writeData(nbt); // writeData is the new writeNbt
+                npc.writeCustomData(nbt); // writeCustomData for customData
             }
         }
 
@@ -437,7 +439,8 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
 
 
         // Render the entity
-        renderEntity(context.getMatrices(), previewX, previewY, 35, previewNPC, 180.0F);
+        MatrixStack matrices = new MatrixStack();
+        renderEntity(matrices, previewX, previewY, 35, previewNPC, 180.0F);
     }
 
     @Override
@@ -536,7 +539,8 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
             return; // Skip rendering if out of bounds vertically
 
         // Render the entity preview
-        renderEntity(context.getMatrices(), x + ENTITY_PREVIEW_SIZE, y + (ENTITY_SPACING / 2), ENTITY_PREVIEW_SIZE, previewNPC, 145.0F);
+        MatrixStack matrices = new MatrixStack();
+        renderEntity(matrices, x + ENTITY_PREVIEW_SIZE, y + (ENTITY_SPACING / 2), ENTITY_PREVIEW_SIZE, previewNPC, 145.0F);
         // Check if the mouse is hovering over this variant
         if (mouseX >= adjustedX && mouseX <= adjustedX + entityWidth
                 && mouseY >= adjustedY && mouseY <= adjustedY + entityHeight) {

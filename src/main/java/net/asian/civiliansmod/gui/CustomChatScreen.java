@@ -71,7 +71,7 @@ public class CustomChatScreen extends AbstractConfigScreen {
         int x = width / 2;
         int y = height / 2;
         Identifier guiTexture = Identifier.of("civiliansmod", "textures/gui/chat_gui.png");
-        context.drawTexture(RenderLayer::getGuiTextured, guiTexture, x - 128, y - 83, 0, 0, 256, 166, 256, 166);
+        context.drawTexture(RenderLayer::getGui, guiTexture, x - 128, y - 83, 0, 0, 256, 166, 256, 166);
     }
 
     @Override

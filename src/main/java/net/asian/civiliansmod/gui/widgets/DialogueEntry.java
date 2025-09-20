@@ -61,10 +61,11 @@ public class DialogueEntry extends AbstractDialogueEntry {
 
         String textToDraw = MinecraftClient.getInstance().textRenderer.trimToWidth(dialogue, maxWidth - MinecraftClient.getInstance().textRenderer.getWidth("...")) + (MinecraftClient.getInstance().textRenderer.getWidth(dialogue) > maxWidth ? "..." : "");
 
-        context.getMatrices().push();
-        context.getMatrices().scale(scale, scale, 1.0F);
+        MatrixStack matrices = new MatrixStack();
+        matrices.push();
+        matrices.scale(scale, scale, 1.0F);
         context.drawText(MinecraftClient.getInstance().textRenderer, textToDraw, (int) ((x + 3) / scale), (int) ((y + 4) / scale), 0xFFFFFF, true);
-        context.getMatrices().pop();
+        matrices.pop();
 
         deleteWidget.render(context, mouseX, mouseY, delta);
     }

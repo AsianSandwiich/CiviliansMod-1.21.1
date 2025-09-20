@@ -51,7 +51,7 @@ public class ChatReasonEntryScrollContainer extends ElementListWidget.Entry<Chat
     public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
         openWidget.setX(x + 1);
         openWidget.setY(y);
-        context.drawGuiTexture(RenderLayer::getGuiTextured, Identifier.ofVanilla("widget/button"), x, y, 145, 13, ColorHelper.fromFloats(1.0f, 0.5f, 0.5f, 1.0f));
+        context.drawGuiTexture(RenderLayer::getGui, Identifier.ofVanilla("widget/button"), x, y, 145, 13, ColorHelper.fromFloats(1.0f, 0.5f, 0.5f, 1.0f));
         openWidget.render(context, mouseX, mouseY, tickDelta);
         context.drawText(MinecraftClient.getInstance().textRenderer, chatReason.getName(), x + 11, y + 2, 0xFFFFFF, true);
         if (open) {

@@ -23,7 +23,7 @@ public class AbstractDialogueEntry extends ButtonWidget {
         }else{
             color = ColorHelper.fromFloats(1.0f, 1.0f, 1.0f, 1.0f);
         }
-        context.drawGuiTexture(RenderLayer::getGuiTextured, Identifier.ofVanilla("widget/button"), x, y, 112, 12, color);
+        context.drawGuiTexture(RenderLayer::getGui, Identifier.ofVanilla("widget/button"), x, y, 112, 12, color);
     }
 
     @Override

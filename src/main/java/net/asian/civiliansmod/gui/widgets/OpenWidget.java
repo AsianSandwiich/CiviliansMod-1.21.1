@@ -28,9 +28,9 @@ public class OpenWidget extends ButtonWidget {
             this.setY(baseY + 1);
 
         if (isMouseOver(mouseX, mouseY)) {
-            context.drawTexture(RenderLayer::getGuiTextured, scrollWidget.open ? OPEN_HOVERED : CLOSE_HOVERED, this.getX(), this.getY() , 0, 0,  this.width, this.height, this.width, this.height);
+            context.drawTexture(RenderLayer::getGui, scrollWidget.open ? OPEN_HOVERED : CLOSE_HOVERED, this.getX(), this.getY() , 0, 0,  this.width, this.height, this.width, this.height);
         } else {
-            context.drawTexture(RenderLayer::getGuiTextured,scrollWidget.open ? OPEN : CLOSE, this.getX(), this.getY(), 0, 0,  this.width, this.height, this.width, this.height);
+            context.drawTexture(RenderLayer::getGui,scrollWidget.open ? OPEN : CLOSE, this.getX(), this.getY(), 0, 0,  this.width, this.height, this.width, this.height);
         }
     }
 
