@@ -336,9 +336,9 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
                 if (!NPCUtil.getNPCTexture(clickedVariant).custom())
                     this.npc.getSkinManager().setBaseVariant(selectedVariantIndex);
 
-                NbtCompound nbt = new NbtCompound();
-                npc.writeData(nbt); // writeData is the new writeNbt
-                npc.writeCustomData(nbt); // writeCustomData for customData
+                NbtCompound writenbt = new NbtCompound();
+                npc.writeData(writenbt); // writeData is the new writeNbt
+                npc.writeCustomData(writenbt); // writeCustomData for customData
             }
         }
 

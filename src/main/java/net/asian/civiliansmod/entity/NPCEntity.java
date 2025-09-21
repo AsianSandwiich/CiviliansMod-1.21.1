@@ -43,9 +43,12 @@ import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.server.network.EntityTrackerEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
@@ -153,29 +156,25 @@ public class NPCEntity extends PathAwareEntity {
     }
 
     @Override
-    public void writeCustomData(NbtCompound nbt) {
-        super.writeCustomData(nbt);
+    public void writeCustomData(WriteView writenbt) {
+        super.writeCustomData(writenbt);
 
-        // Save the variant to NBT
-        nbt.putBoolean("IsPaused", this.isPaused());
-        nbt.putBoolean("IsFollowing", this.isFollowing());
-        nbt.put("dialogues", chatManager.saveDialogues());
-        this.skinManager.writeNbt(nbt);
+        writenbt.putBoolean("IsPaused", this.isPaused());
+        writenbt.putBoolean("IsFollowing", this.isFollowing());
+
+        writenbt.put("dialogues", chatManager.saveDialoguesAsMap());
+        writenbt.put("skindata", skinManager.saveAsMap());
     }
 
     @Override
-    public void readCustomData(NbtCompound nbt) {
-        super.readCustomData(nbt);
-        if (nbt.contains("IsPaused")) {
-            this.setPaused(nbt.getBoolean("IsPaused").orElse(false));
-        }
-        if (nbt.contains("IsFollowing")) {
-            this.setFollowing(nbt.getBoolean("IsFollowing").orElse(false));
-        }
-        if (nbt.contains("dialogues")) {
-            this.chatManager.setFromNbt(nbt.getCompound("dialogues"));
-        }
-        this.skinManager.readNbt(nbt);
+    public void readCustomData(ReadView viewnbt) {
+        super.readCustomData(viewnbt);
+
+        this.setPaused(viewnbt.getBoolean("IsPaused", false));
+        this.setFollowing(viewnbt.getBoolean("IsFollowing", false));
+
+        viewnbt.get("dialogues").ifPresent(chatManager::loadFromMap);
+        viewnbt.get("skindata").ifPresent(skinManager::loadFromMap);
     }
 
 
@@ -519,47 +518,37 @@ public class NPCEntity extends PathAwareEntity {
             return mainCompound;
         }
 
-        public void setFromNbt(Optional<NbtCompound> nbtOptional) {
-            if (nbtOptional.isEmpty()) {
-                return;
-            }
+        public void setFromNbt(Optional<ReadView> nbtOptional) {
+            if (nbtOptional.isEmpty()) return;
 
-            NbtCompound nbt = nbtOptional.get();
-            Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues = new HashMap<>();
+            ReadView nbt = nbtOptional.get();
+            Map<String, Map<NpcChat.ChatReason, List<String>>> loadedDialogues = new HashMap<>();
 
-            for (String language : nbt.getKeys()) {
-                Optional<NbtCompound> languageCompoundOpt = nbt.getCompound(language);
-                if (!languageCompoundOpt.isPresent()) continue;
-
-                NbtCompound languageCompound = languageCompoundOpt.get();
+            for (String language : nbt.keySet()) {
+                Optional<ReadView.TypedListReadView<String>> langViewOpt = nbt.getOptionalTypedListView(language, Codecs.STRING);
                 Map<NpcChat.ChatReason, List<String>> reasonToMessages = new HashMap<>();
 
-                for (String reasonName : languageCompound.getKeys()) {
-                    try {
-                        NpcChat.ChatReason reason = NpcChat.ChatReason.fromName(reasonName);
-                        Optional<NbtList> optionalList = languageCompound.getList(reasonName);
-                        if (optionalList.isPresent()) {
-                            NbtList messageList = optionalList.get();
-                            List<String> messages = new ArrayList<>();
+                nbt.getOptionalReadView(language).ifPresent(langCompound -> {
+                    for (String reasonName : langCompound.keySet()) {
+                        try {
+                            NpcChat.ChatReason reason = NpcChat.ChatReason.fromName(reasonName);
 
-                            for (NbtElement element : messageList) {
-                                messages.add(element.asString().orElse(""));
-                            }
+                            List<String> messages = langCompound.getListReadView(reasonName).stream()
+                                    .map(msgView -> msgView.getString("value", ""))
+                                    .toList();
 
                             reasonToMessages.put(reason, messages);
+                        } catch (Exception e) {
+                            CiviliansMod.LOGGER.error("Unexpected reason: {}", reasonName, e);
                         }
-                    } catch (Exception e) {
-                        CiviliansMod.LOGGER.error("Unexpected reason: {}", reasonName, e);
                     }
-                }
+                });
 
-                dialogues.put(language, reasonToMessages);
+                loadedDialogues.put(language, reasonToMessages);
             }
 
-            this.dialogues = dialogues;
+            this.dialogues = loadedDialogues;
         }
-
-
 
         public void markDialoguesDirty(UUID avoid) {
             if (npc.getWorld() instanceof ServerWorld serverWorld) {
@@ -596,19 +585,14 @@ public class NPCEntity extends PathAwareEntity {
 
     public static class SkinManager {
         byte[] skinByteArray;
-
         SkinIdentifier skinIdentifier;
 
         public void setBaseVariant(int baseVariant) {
             this.baseVariant = baseVariant;
         }
-
         int baseVariant;
-
         boolean slim;
-
         NPCEntity npcEntity;
-
         boolean defaultSkin;
 
         public SkinManager(NPCEntity npcEntity) {
@@ -642,19 +626,32 @@ public class NPCEntity extends PathAwareEntity {
             return this.skinIdentifier;
         }
 
-        void writeNbt(NbtCompound nbt) {
-            nbt.putInt("basevariat", baseVariant);
+        public void saveAsMap(WriteView writeView) {
+            writeView.putInt("baseVariant", baseVariant);
+            writeView.putBoolean("slim", slim);
             if (skinByteArray != null) {
-                nbt.putByteArray("skin", skinByteArray);
+                writeView.put("skin", Codecs.BASE_64, skinByteArray);
             }
         }
 
-        void readNbt(NbtCompound nbt) {
-            this.baseVariant = nbt.getInt("basevariat").get();
-            if (nbt.contains("skin")) {
-                Optional<byte[]> skinData = nbt.getByteArray("skin");
-                skinData.ifPresent(bytes -> this.skinByteArray = Arrays.copyOf(bytes, bytes.length));
+        public void loadFromMap(ReadView readView) {
+            this.baseVariant = readView.getInt("baseVariant", this.baseVariant);
+            this.slim = readView.getBoolean("slim", this.slim);
+            readView.get("skin").ifPresent(bytes -> this.skinByteArray = Arrays.copyOf(bytes, bytes.length));
+        }
+
+
+        public void writeData(WriteView writenbt) {
+            writenbt.putInt("basevariant", baseVariant);
+            if (skinByteArray != null) {
+                writenbt.put("skin", Codecs.BASE_64, skinByteArray);
             }
+        }
+
+        public void readData(ReadView readnbt) {
+            this.baseVariant = readnbt.getInt("basevariant", this.baseVariant);
+            readnbt.read("skin", Codecs.BASE_64)
+                    .ifPresent(bytes -> this.skinByteArray = Arrays.copyOf(bytes, bytes.length));
         }
 
 
