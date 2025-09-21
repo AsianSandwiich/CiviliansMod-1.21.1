@@ -71,8 +71,11 @@ public class NPCUtil {
     }
 
     public static SkinIdentifier getNPCTexture(int texture) {
-        if (texture > skins.size() - 1) {
-            texture = Random.create().nextInt(skins.size() - 1);
+        if (skins.isEmpty()) {
+            throw new IllegalStateException("No NPC skins are registered!");
+        }
+        if (texture < 0 || texture >= skins.size()) {
+            texture = Random.create().nextInt(skins.size());
         }
         return skins.get(texture);
     }
