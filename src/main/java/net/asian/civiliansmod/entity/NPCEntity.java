@@ -650,10 +650,18 @@ public class NPCEntity extends PathAwareEntity {
         }
 
         void readNbt(NbtCompound nbt) {
-            this.baseVariant = nbt.getInt("basevariant").get();
+            this.baseVariant = nbt.getInt("basevariant").orElse(0);
+
+            if (this.baseVariant < 0 || this.baseVariant >= NPCUtil.getSkins().size()) {
+                CiviliansMod.LOGGER.warn("Invalid baseVariant {} loaded from NBT, resetting to 0", this.baseVariant);
+                this.baseVariant = 0;
+            }
+
             if (nbt.contains("skin")) {
-                Optional<byte[]> skinData = nbt.getByteArray("skin");
-                skinData.ifPresent(bytes -> this.skinByteArray = Arrays.copyOf(bytes, bytes.length));
+                byte[] skinData = nbt.getByteArray("skin").orElse(null);
+                if (skinData != null && skinData.length > 0) {
+                    this.skinByteArray = Arrays.copyOf(skinData, skinData.length);
+                }
             }
         }
 
