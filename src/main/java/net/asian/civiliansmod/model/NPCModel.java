@@ -12,10 +12,11 @@ import net.fabricmc.loader.api.ModContainer;
 
 import java.util.List;
 import org.slf4j.Logger;
-import java.util.Optional;
+
 
 public class NPCModel extends BipedEntityModel<NPCRenderState> {
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final java.util.Set<String> warnedMods = new java.util.HashSet<>();
 
     private final List<ModelPart> parts;
     public final ModelPart leftSleeve;
@@ -114,30 +115,48 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
 
     @Override
     public void setAngles(NPCRenderState playerEntityRenderState) {
-        if (playerEntityRenderState == null) return;
-
-        try {
-            super.setAngles(playerEntityRenderState);
-        } catch (NullPointerException e) {
-            // Compat issues in Log
-            String culprit = findCulpritMod(e);
-            LOGGER.warn("[Civilians] Another Mod tried to inject into Civilians code via Mixin! "
-                    + "Please report this to the Mod Developer for compatibility. Likely culprit: {}", culprit, e);
+        if (playerEntityRenderState == null) {
+            setVisible(false);
+            return;
         }
+        try {
+                super.setAngles(playerEntityRenderState);
+            } catch (Throwable e) {
+                String culprit = findCulpritMod(e);
 
-        boolean visible = !playerEntityRenderState.spectator;
-        this.body.visible = visible;
-        this.rightArm.visible = visible;
-        this.leftArm.visible = visible;
-        this.rightLeg.visible = visible;
-        this.leftLeg.visible = visible;
-        this.hat.visible = playerEntityRenderState.hatVisible;
-        this.jacket.visible = playerEntityRenderState.jacketVisible;
-        this.leftPants.visible = playerEntityRenderState.leftPantsLegVisible;
-        this.rightPants.visible = playerEntityRenderState.rightPantsLegVisible;
-        this.leftSleeve.visible = playerEntityRenderState.leftSleeveVisible;
-        this.rightSleeve.visible = playerEntityRenderState.rightSleeveVisible;
+                // only one error, not spamming the console
+                if (warnedMods.add(culprit)) {
+                    LOGGER.warn("[Civilians] Another Mod tried to inject into Civilians code via Mixin! "
+                            + "Please report this to the Mod Developer for compatibility. Likely culprit: {}", culprit, e);
+                }
+            //default
+            this.body.visible = true;
+            this.head.visible = true;
+            this.leftArm.visible = true;
+            this.rightArm.visible = true;
+            this.leftLeg.visible = true;
+            this.rightLeg.visible = true;
+
+            //optional visibility from parts
+            this.hat.visible = false;
+            this.jacket.visible = false;
+            this.leftSleeve.visible = false;
+            this.rightSleeve.visible = false;
+            this.leftPants.visible = false;
+            this.rightPants.visible = false;
+            }
+            updateVisibility(playerEntityRenderState);
     }
+
+private void updateVisibility(NPCRenderState playerEntityRenderState) {
+    setVisible(!playerEntityRenderState.spectator);
+    this.hat.visible = playerEntityRenderState.hatVisible;
+    this.jacket.visible = playerEntityRenderState.jacketVisible;
+    this.leftPants.visible = playerEntityRenderState.leftPantsLegVisible;
+    this.rightPants.visible = playerEntityRenderState.rightPantsLegVisible;
+    this.leftSleeve.visible = playerEntityRenderState.leftSleeveVisible;
+    this.rightSleeve.visible = playerEntityRenderState.rightSleeveVisible;
+}
 
     public void setVisible(boolean visible) {
         super.setVisible(visible);
@@ -153,25 +172,33 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
     }
 
     private String findCulpritMod(Throwable t) {
-        for (StackTraceElement ste : t.getStackTrace()) {
-            String classPartName = ste.getClassName();
+        //get modID Cached...
+        List<String> modIds = FabricLoader.getInstance()
+                .getAllMods()
+                .stream()
+                .map(mod -> mod.getMetadata().getId())
+                .toList();
+        Throwable current = t;
+        while (current != null) {
+            for (StackTraceElement ste : current.getStackTrace()) {
+                String classPartName = ste.getClassName();
 
-            // ignore own and vanilla part
-            if (classPartName.startsWith("net.asian.civiliansmod")) continue;
-            if (classPartName.startsWith("net.minecraft")) continue;
+                // ignore own and vanilla part
+                if (classPartName.startsWith("net.asian.civiliansmod")) continue;
+                if (classPartName.startsWith("net.minecraft")) continue;
 
-            for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
-                String modId = mod.getMetadata().getId();
-                if (classPartName.startsWith(modId)) { // match with modID package
-                    return modId;
+                for (String modId : modIds) {
+                    if (classPartName.startsWith(modId)) {
+                        return modId;
+                    }
+                }
+                String[] parts = classPartName.split("\\.");
+                for (String part : parts) {
+                    if (part.equals("com") || part.equals("org") || part.equals("net")) continue;
+                    return part;
                 }
             }
-            String[] parts = classPartName.split("\\.");
-            for (String part : parts) {
-                if (part.equals("com") || part.equals("org") || part.equals("net")) continue;
-                return part;
-            }
-            return classPartName;
+            current = current.getCause();
         }
         return "Unknown Mod";
     }

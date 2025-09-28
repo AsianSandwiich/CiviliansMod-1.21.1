@@ -19,6 +19,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
@@ -615,7 +616,6 @@ public class NPCEntity extends PathAwareEntity {
         @Environment(EnvType.CLIENT)
         public void setIdSkin(SkinIdentifier skin) {
             this.skinIdentifier = skin;
-
         }
 
         @Environment(EnvType.CLIENT)
@@ -639,6 +639,21 @@ public class NPCEntity extends PathAwareEntity {
             this.slim = readView.getBoolean("slim", this.slim);
             readView.get("skin").ifPresent(bytes -> this.skinByteArray = Arrays.copyOf(bytes, bytes.length));
         }
+
+        void readNbt(NbtCompound nbt) {
+            this.baseVariant = nbt.getInt("basevariant").orElse(0);
+
+            if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
+                if (this.baseVariant < 0 || this.baseVariant >= NPCUtil.getSkins().size()) {
+                    CiviliansMod.LOGGER.warn("Invalid baseVariant {} loaded from NBT, resetting to 0", this.baseVariant);
+                    this.baseVariant = 0;
+                }
+            } else  {
+                if (this.baseVariant < 0) {
+                    this.baseVariant = 0;
+                }
+            }
+
 
 
         public void writeData(WriteView writenbt) {
