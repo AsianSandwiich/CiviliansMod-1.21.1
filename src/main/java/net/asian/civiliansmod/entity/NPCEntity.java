@@ -19,6 +19,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
@@ -631,7 +632,6 @@ public class NPCEntity extends PathAwareEntity {
         @Environment(EnvType.CLIENT)
         public void setIdSkin(SkinIdentifier skin) {
             this.skinIdentifier = skin;
-
         }
 
         @Environment(EnvType.CLIENT)
@@ -650,10 +650,24 @@ public class NPCEntity extends PathAwareEntity {
         }
 
         void readNbt(NbtCompound nbt) {
-            this.baseVariant = nbt.getInt("basevariant").get();
+            this.baseVariant = nbt.getInt("basevariant").orElse(0);
+
+            if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
+                if (this.baseVariant < 0 || this.baseVariant >= NPCUtil.getSkins().size()) {
+                    CiviliansMod.LOGGER.warn("Invalid baseVariant {} loaded from NBT, resetting to 0", this.baseVariant);
+                    this.baseVariant = 0;
+                }
+            } else  {
+                if (this.baseVariant < 0) {
+                    this.baseVariant = 0;
+                }
+            }
+
             if (nbt.contains("skin")) {
-                Optional<byte[]> skinData = nbt.getByteArray("skin");
-                skinData.ifPresent(bytes -> this.skinByteArray = Arrays.copyOf(bytes, bytes.length));
+                byte[] skinData = nbt.getByteArray("skin").orElse(null);
+                if (skinData != null && skinData.length > 0) {
+                    this.skinByteArray = Arrays.copyOf(skinData, skinData.length);
+                }
             }
         }
 

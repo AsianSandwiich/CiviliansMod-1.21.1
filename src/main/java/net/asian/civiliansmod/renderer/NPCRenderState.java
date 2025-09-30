@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 public class NPCRenderState extends BipedEntityRenderState {
     public boolean slim;
     public Identifier texture;
-
     public boolean spectator;
     public boolean hatVisible = true;
     public boolean jacketVisible = true;

@@ -5,7 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "LanguageOptionScreenMixin",
-    "TextFieldWidgetAccessor"
+    "NPCRenderStateCompatMixin"
   ],
   "injectors": {
     "defaultRequire": 1
