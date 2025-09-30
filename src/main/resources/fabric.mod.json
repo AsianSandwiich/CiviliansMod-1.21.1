@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "civiliansmod",
-  "name": "Civilians Mod",
-  "version": "1.2.1",
-  "description": "A client and server side Minecraft mod introducing civilians.",
+  "id": "${mod_id}",
+  "name": "${mod_name}",
+  "version": "${version}",
+  "description": "${mod_description}",
   "icon": "assets/civiliansmod/icon.png",
   "authors": [
     "AsianSandwiich"
@@ -26,9 +26,10 @@
     ]
   },
   "depends": {
-    "fabricloader": ">=0.16.10",
-    "minecraft": "1.21.4",
-    "fabric-api": ">=0.116.1+1.21.4"
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "${minecraft_version}",
+    "java": ">=21",
+    "fabric-api": ">=${fabric_version}"
   },
   "mixins": [
     "civiliansmod.mixins.json"
