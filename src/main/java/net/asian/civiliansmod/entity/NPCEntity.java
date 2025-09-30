@@ -44,12 +44,9 @@ import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.server.network.EntityTrackerEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.storage.ReadView;
-import net.minecraft.storage.WriteView;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
@@ -157,25 +154,29 @@ public class NPCEntity extends PathAwareEntity {
     }
 
     @Override
-    public void writeCustomData(WriteView writenbt) {
-        super.writeCustomData(writenbt);
+    public void writeCustomDataToNbt(NbtCompound nbt) {
+        super.writeCustomDataToNbt(nbt);
 
-        writenbt.putBoolean("IsPaused", this.isPaused());
-        writenbt.putBoolean("IsFollowing", this.isFollowing());
-
-        writenbt.put("dialogues", chatManager.saveDialoguesAsMap());
-        writenbt.put("skindata", skinManager.saveAsMap());
+        // Save the variant to NBT
+        nbt.putBoolean("IsPaused", this.isPaused());
+        nbt.putBoolean("IsFollowing", this.isFollowing());
+        nbt.put("dialogues", chatManager.saveDialogues());
+        this.skinManager.writeNbt(nbt);
     }
 
     @Override
-    public void readCustomData(ReadView viewnbt) {
-        super.readCustomData(viewnbt);
-
-        this.setPaused(viewnbt.getBoolean("IsPaused", false));
-        this.setFollowing(viewnbt.getBoolean("IsFollowing", false));
-
-        viewnbt.get("dialogues").ifPresent(chatManager::loadFromMap);
-        viewnbt.get("skindata").ifPresent(skinManager::loadFromMap);
+    public void readCustomDataFromNbt(NbtCompound nbt) {
+        super.readCustomDataFromNbt(nbt);
+        if (nbt.contains("IsPaused")) {
+            this.setPaused(nbt.getBoolean("IsPaused").orElse(false));
+        }
+        if (nbt.contains("IsFollowing")) {
+            this.setFollowing(nbt.getBoolean("IsFollowing").orElse(false));
+        }
+        if (nbt.contains("dialogues")) {
+            this.chatManager.setFromNbt(nbt.getCompound("dialogues"));
+        }
+        this.skinManager.readNbt(nbt);
     }
 
 
@@ -267,7 +268,7 @@ public class NPCEntity extends PathAwareEntity {
                     double dz = player.getZ() - this.getZ();
                     targetYaw = (float) (Math.atan2(dz, dx) * (180F / Math.PI)) - 90F;
                     isTurning = true;
-                    this.lookAtPlayerTicks = 170; // NPC will look at the player for 5 seconds (170 ticks)
+                    this.lookAtPlayerTicks = 170;
 
                     return ActionResult.SUCCESS;
                 } else {
@@ -519,37 +520,47 @@ public class NPCEntity extends PathAwareEntity {
             return mainCompound;
         }
 
-        public void setFromNbt(Optional<ReadView> nbtOptional) {
-            if (nbtOptional.isEmpty()) return;
-
-            ReadView nbt = nbtOptional.get();
-            Map<String, Map<NpcChat.ChatReason, List<String>>> loadedDialogues = new HashMap<>();
-
-            for (String language : nbt.keySet()) {
-                Optional<ReadView.TypedListReadView<String>> langViewOpt = nbt.getOptionalTypedListView(language, Codecs.STRING);
-                Map<NpcChat.ChatReason, List<String>> reasonToMessages = new HashMap<>();
-
-                nbt.getOptionalReadView(language).ifPresent(langCompound -> {
-                    for (String reasonName : langCompound.keySet()) {
-                        try {
-                            NpcChat.ChatReason reason = NpcChat.ChatReason.fromName(reasonName);
-
-                            List<String> messages = langCompound.getListReadView(reasonName).stream()
-                                    .map(msgView -> msgView.getString("value", ""))
-                                    .toList();
-
-                            reasonToMessages.put(reason, messages);
-                        } catch (Exception e) {
-                            CiviliansMod.LOGGER.error("Unexpected reason: {}", reasonName, e);
-                        }
-                    }
-                });
-
-                loadedDialogues.put(language, reasonToMessages);
+        public void setFromNbt(Optional<NbtCompound> nbtOptional) {
+            if (nbtOptional.isEmpty()) {
+                return;
             }
 
-            this.dialogues = loadedDialogues;
+            NbtCompound nbt = nbtOptional.get();
+            Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues = new HashMap<>();
+
+            for (String language : nbt.getKeys()) {
+                Optional<NbtCompound> languageCompoundOpt = nbt.getCompound(language);
+                if (!languageCompoundOpt.isPresent()) continue;
+
+                NbtCompound languageCompound = languageCompoundOpt.get();
+                Map<NpcChat.ChatReason, List<String>> reasonToMessages = new HashMap<>();
+
+                for (String reasonName : languageCompound.getKeys()) {
+                    try {
+                        NpcChat.ChatReason reason = NpcChat.ChatReason.fromName(reasonName);
+                        Optional<NbtList> optionalList = languageCompound.getList(reasonName);
+                        if (optionalList.isPresent()) {
+                            NbtList messageList = optionalList.get();
+                            List<String> messages = new ArrayList<>();
+
+                            for (NbtElement element : messageList) {
+                                messages.add(element.asString().orElse(""));
+                            }
+
+                            reasonToMessages.put(reason, messages);
+                        }
+                    } catch (Exception e) {
+                        CiviliansMod.LOGGER.error("Unexpected reason: {}", reasonName, e);
+                    }
+                }
+
+                dialogues.put(language, reasonToMessages);
+            }
+
+            this.dialogues = dialogues;
         }
+
+
 
         public void markDialoguesDirty(UUID avoid) {
             if (npc.getWorld() instanceof ServerWorld serverWorld) {
@@ -586,14 +597,19 @@ public class NPCEntity extends PathAwareEntity {
 
     public static class SkinManager {
         byte[] skinByteArray;
+
         SkinIdentifier skinIdentifier;
 
         public void setBaseVariant(int baseVariant) {
             this.baseVariant = baseVariant;
         }
+
         int baseVariant;
+
         boolean slim;
+
         NPCEntity npcEntity;
+
         boolean defaultSkin;
 
         public SkinManager(NPCEntity npcEntity) {
@@ -626,18 +642,11 @@ public class NPCEntity extends PathAwareEntity {
             return this.skinIdentifier;
         }
 
-        public void saveAsMap(WriteView writeView) {
-            writeView.putInt("baseVariant", baseVariant);
-            writeView.putBoolean("slim", slim);
+        void writeNbt(NbtCompound nbt) {
+            nbt.putInt("basevariant", baseVariant);
             if (skinByteArray != null) {
-                writeView.put("skin", Codecs.BASE_64, skinByteArray);
+                nbt.putByteArray("skin", skinByteArray);
             }
-        }
-
-        public void loadFromMap(ReadView readView) {
-            this.baseVariant = readView.getInt("baseVariant", this.baseVariant);
-            this.slim = readView.getBoolean("slim", this.slim);
-            readView.get("skin").ifPresent(bytes -> this.skinByteArray = Arrays.copyOf(bytes, bytes.length));
         }
 
         void readNbt(NbtCompound nbt) {
@@ -654,19 +663,12 @@ public class NPCEntity extends PathAwareEntity {
                 }
             }
 
-
-
-        public void writeData(WriteView writenbt) {
-            writenbt.putInt("basevariant", baseVariant);
-            if (skinByteArray != null) {
-                writenbt.put("skin", Codecs.BASE_64, skinByteArray);
+            if (nbt.contains("skin")) {
+                byte[] skinData = nbt.getByteArray("skin").orElse(null);
+                if (skinData != null && skinData.length > 0) {
+                    this.skinByteArray = Arrays.copyOf(skinData, skinData.length);
+                }
             }
-        }
-
-        public void readData(ReadView readnbt) {
-            this.baseVariant = readnbt.getInt("basevariant", this.baseVariant);
-            readnbt.read("skin", Codecs.BASE_64)
-                    .ifPresent(bytes -> this.skinByteArray = Arrays.copyOf(bytes, bytes.length));
         }
 
 
