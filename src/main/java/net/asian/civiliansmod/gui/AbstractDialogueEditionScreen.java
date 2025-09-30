@@ -4,7 +4,6 @@ import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.chat.NpcChat;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.widgets.TextButtonWidget;
-import net.asian.civiliansmod.mixin.TextFieldWidgetAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
@@ -35,7 +34,7 @@ public class AbstractDialogueEditionScreen extends Screen {
         int y = height / 2;
         super.init();
         this.textFieldWidget = new TextFieldWidget(this.client.textRenderer, x - 125, y, 250, 15, Text.literal(text));
-        ((TextFieldWidgetAccessor) textFieldWidget).setMaxLength(256);
+        this.textFieldWidget.setMaxLength(256);
         this.textFieldWidget.setText(text);
         TextButtonWidget cancelButton = new TextButtonWidget(x - 66, y + 30, 60, 15, Text.translatable("civilians.gui.cancel"), button -> MinecraftClient.getInstance().setScreen(parent), 0xFFFFFF, 0xFFFF0000);
 

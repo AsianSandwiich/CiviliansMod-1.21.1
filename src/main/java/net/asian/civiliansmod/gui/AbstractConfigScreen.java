@@ -20,7 +20,7 @@ public class AbstractConfigScreen extends Screen {
         int x = width / 2;
         int y = height / 2;
 
-        int skinSelectionColor = this instanceof AbstratcNPCScreen ? 0x00FF00 : 0xFFFFFFFF;
+        int skinSelectionColor = this instanceof AbstractNPCScreen ? 0x00FF00 : 0xFFFFFFFF;
         TextButtonWidget skinSelection = new TextButtonWidget(x - 88, y - 78, 85, 13, Text.translatable("civilians.gui.skin"), (button) -> {
             MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(npc));
         }, 0xFFFFFFFF, skinSelectionColor);

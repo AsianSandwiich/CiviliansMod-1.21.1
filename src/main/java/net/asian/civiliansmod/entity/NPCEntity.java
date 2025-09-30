@@ -9,8 +9,8 @@ import net.asian.civiliansmod.entity.goal.CustomDoorGoal;
 import net.asian.civiliansmod.gui.CustomNPCScreen;
 import net.asian.civiliansmod.gui.DefaultNPCScreen;
 import net.asian.civiliansmod.gui.SlimNPCScreen;
-
-import net.asian.civiliansmod.networking.payload.npc.dialogue.CilentDialogueSyncPayload;
+import java.util.Arrays;
+import net.asian.civiliansmod.networking.payload.npc.dialogue.ClientDialogueSyncPayload;
 import net.asian.civiliansmod.networking.payload.npc.dialogue.DialogueSyncPayload;
 import net.asian.civiliansmod.networking.payload.npc.dialogue.OpenScreenDialoguesPayload;
 import net.asian.civiliansmod.networking.payload.npc.skin.ClientNpcSkinPayload;
@@ -21,6 +21,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
@@ -36,6 +37,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -328,7 +330,7 @@ public class NPCEntity extends PathAwareEntity {
         super.tick();
         if (getWorld().isClient) {
             if (--updateDialoguesTicks == 0) {
-                ClientPlayNetworking.send(new CilentDialogueSyncPayload(this.getUuid()));
+                ClientPlayNetworking.send(new ClientDialogueSyncPayload(this.getUuid()));
             }
         }
     }

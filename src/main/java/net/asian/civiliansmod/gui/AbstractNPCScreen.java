@@ -35,7 +35,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
+public abstract class AbstractNPCScreen extends AbstractConfigScreen {
     private final NPCEntity npc;
 
     // Layout constants
@@ -69,11 +69,11 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
     List<Integer> toRender = new ArrayList<>();
 
 
-    public AbstratcNPCScreen(NPCEntity npc) {
+    public AbstractNPCScreen(NPCEntity npc) {
         this(npc, -1, NPCUtil.getSkins().indexOf(npc.getSkinManager().getIdSkin()));
     }
 
-    public AbstratcNPCScreen(NPCEntity npc, int selected, int defaultSkin) {
+    public AbstractNPCScreen(NPCEntity npc, int selected, int defaultSkin) {
         super(npc, Text.literal("Change NPC Variant"));
         this.npc = npc;
         this.selectedVariant = selected;
@@ -84,7 +84,7 @@ public abstract class AbstratcNPCScreen extends AbstractConfigScreen {
         this.stay = npc.isPaused();
     }
 
-    public AbstratcNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex, boolean follow, boolean stay) {
+    public AbstractNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex, boolean follow, boolean stay) {
         super(npc, Text.literal("Change NPC Variant"));
         this.npc = npc;
         this.selectedVariant = selected;

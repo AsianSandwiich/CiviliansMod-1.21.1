@@ -69,9 +69,14 @@ public record DialogueSyncPayload(int npcId, String info) implements CustomPaylo
     }
 
     public static String decompress(String compressed) throws IOException {
+        try {
         byte[] data = Base64.getDecoder().decode(compressed);
         try (GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(data))) {
             return new String(gzip.readAllBytes(), StandardCharsets.UTF_8);
+        }
+        } catch (Exception e) {
+            CiviliansMod.LOGGER.error("Decompression error", e);
+            throw e;
         }
     }
 }

@@ -73,9 +73,16 @@ public class NPCUtil {
     }
 
     public static SkinIdentifier getNPCTexture(int texture) {
-        if (texture > skins.size() - 1) {
-            texture = Random.create().nextInt(skins.size() - 1);
+        if (skins.isEmpty()) {
+            CiviliansMod.LOGGER.error("Tried to get NPC skin but no skins are loaded!");
+            return new SkinIdentifier(Identifier.of("minecraft", "textures/entity/steve.png"), false, true);
         }
+
+        if (texture < 0 || texture >= skins.size()) {
+            CiviliansMod.LOGGER.warn("Invalid skin index {} (skins.size = {}). Using 0 as fallback.", texture, skins.size());
+            texture = 0;
+        }
+
         return skins.get(texture);
     }
 

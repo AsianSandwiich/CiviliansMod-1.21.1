@@ -1,16 +1,22 @@
 package net.asian.civiliansmod.model;
 
 import net.asian.civiliansmod.renderer.NPCRenderState;
+import com.mojang.logging.LogUtils;
 import net.minecraft.client.model.*;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.random.Random;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.ModContainer;
 
 import java.util.List;
+import org.slf4j.Logger;
+
 
 public class NPCModel extends BipedEntityModel<NPCRenderState> {
-
+    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final java.util.Set<String> warnedMods = new java.util.HashSet<>();
 
     private final List<ModelPart> parts;
     public final ModelPart leftSleeve;
@@ -20,9 +26,10 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
     public final ModelPart jacket;
     private final boolean thinArms;
 
-    public NPCModel(ModelPart modelPart, boolean bl) {
+    public NPCModel(ModelPart modelPart, boolean thinArms) {
         super(modelPart, RenderLayer::getEntityTranslucent);
-        this.thinArms = bl;
+        this.thinArms = thinArms;
+
         this.leftSleeve = this.leftArm.getChild("left_sleeve");
         this.rightSleeve = this.rightArm.getChild("right_sleeve");
         this.leftPants = this.leftLeg.getChild("left_pants");
@@ -31,11 +38,11 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
         this.parts = List.of(this.head, this.body, this.leftArm, this.rightArm, this.leftLeg, this.rightLeg);
     }
 
-    public static ModelData getTexturedModelData(Dilation dilation, boolean bl) {
+    public static ModelData getTexturedModelData(Dilation dilation, boolean thinArms) {
         ModelData modelData = BipedEntityModel.getModelData(dilation, 0.0F);
         ModelPartData modelPartData = modelData.getRoot();
 
-        if (bl) { // Thin arms
+        if (thinArms) {
             ModelPartData leftArm = modelPartData.addChild("left_arm",
                     ModelPartBuilder.create().uv(32, 48)
                             .cuboid(-1.0F, -2.0F, -2.0F, 3.0F, 12.0F, 4.0F, dilation),
@@ -55,7 +62,7 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
                     ModelPartBuilder.create().uv(40, 32)
                             .cuboid(-2.0F, -2.0F, -2.0F, 3.0F, 12.0F, 4.0F, dilation.add(0.25F)),
                     ModelTransform.NONE);
-        } else { // Wide arms
+        } else {
             ModelPartData leftArm = modelPartData.addChild("left_arm",
                     ModelPartBuilder.create().uv(32, 48)
                             .cuboid(-1.0F, -2.0F, -2.0F, 4.0F, 12.0F, 4.0F, dilation),
@@ -105,33 +112,94 @@ public class NPCModel extends BipedEntityModel<NPCRenderState> {
 
         return modelData;
     }
-  
+
+    @Override
     public void setAngles(NPCRenderState playerEntityRenderState) {
-        boolean bl = !playerEntityRenderState.spectator;
-        this.body.visible = bl;
-        this.rightArm.visible = bl;
-        this.leftArm.visible = bl;
-        this.rightLeg.visible = bl;
-        this.leftLeg.visible = bl;
-        this.hat.visible = playerEntityRenderState.hatVisible;
-        this.jacket.visible = playerEntityRenderState.jacketVisible;
-        this.leftPants.visible = playerEntityRenderState.leftPantsLegVisible;
-        this.rightPants.visible = playerEntityRenderState.rightPantsLegVisible;
-        this.leftSleeve.visible = playerEntityRenderState.leftSleeveVisible;
-        this.rightSleeve.visible = playerEntityRenderState.rightSleeveVisible;
-        super.setAngles(playerEntityRenderState);
+        if (playerEntityRenderState == null) {
+            setVisible(false);
+            return;
+        }
+        try {
+                super.setAngles(playerEntityRenderState);
+            } catch (Throwable e) {
+                String culprit = findCulpritMod(e);
+
+                // only one error, not spamming the console
+                if (warnedMods.add(culprit)) {
+                    LOGGER.warn("[Civilians] Another Mod tried to inject into Civilians code via Mixin! "
+                            + "Please report this to the Mod Developer for compatibility. Likely culprit: {}", culprit, e);
+                }
+            //default
+            this.body.visible = true;
+            this.head.visible = true;
+            this.leftArm.visible = true;
+            this.rightArm.visible = true;
+            this.leftLeg.visible = true;
+            this.rightLeg.visible = true;
+
+            //optional visibility from parts
+            this.hat.visible = false;
+            this.jacket.visible = false;
+            this.leftSleeve.visible = false;
+            this.rightSleeve.visible = false;
+            this.leftPants.visible = false;
+            this.rightPants.visible = false;
+            }
+            updateVisibility(playerEntityRenderState);
     }
 
-    public void setVisible(boolean bl) {
-        super.setVisible(bl);
-        this.leftSleeve.visible = bl;
-        this.rightSleeve.visible = bl;
-        this.leftPants.visible = bl;
-        this.rightPants.visible = bl;
-        this.jacket.visible = bl;
+private void updateVisibility(NPCRenderState playerEntityRenderState) {
+    setVisible(!playerEntityRenderState.spectator);
+    this.hat.visible = playerEntityRenderState.hatVisible;
+    this.jacket.visible = playerEntityRenderState.jacketVisible;
+    this.leftPants.visible = playerEntityRenderState.leftPantsLegVisible;
+    this.rightPants.visible = playerEntityRenderState.rightPantsLegVisible;
+    this.leftSleeve.visible = playerEntityRenderState.leftSleeveVisible;
+    this.rightSleeve.visible = playerEntityRenderState.rightSleeveVisible;
+}
+
+    public void setVisible(boolean visible) {
+        super.setVisible(visible);
+        this.leftSleeve.visible = visible;
+        this.rightSleeve.visible = visible;
+        this.leftPants.visible = visible;
+        this.rightPants.visible = visible;
+        this.jacket.visible = visible;
     }
 
     public ModelPart getRandomPart(Random random) {
-        return (ModelPart) Util.getRandom(this.parts, random);
+        return Util.getRandom(this.parts, random);
+    }
+
+    private String findCulpritMod(Throwable t) {
+        //get modID Cached...
+        List<String> modIds = FabricLoader.getInstance()
+                .getAllMods()
+                .stream()
+                .map(mod -> mod.getMetadata().getId())
+                .toList();
+        Throwable current = t;
+        while (current != null) {
+            for (StackTraceElement ste : current.getStackTrace()) {
+                String classPartName = ste.getClassName();
+
+                // ignore own and vanilla part
+                if (classPartName.startsWith("net.asian.civiliansmod")) continue;
+                if (classPartName.startsWith("net.minecraft")) continue;
+
+                for (String modId : modIds) {
+                    if (classPartName.startsWith(modId)) {
+                        return modId;
+                    }
+                }
+                String[] parts = classPartName.split("\\.");
+                for (String part : parts) {
+                    if (part.equals("com") || part.equals("org") || part.equals("net")) continue;
+                    return part;
+                }
+            }
+            current = current.getCause();
+        }
+        return "Unknown Mod";
     }
 }
