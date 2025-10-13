@@ -282,7 +282,7 @@ public class NPCEntity extends PathAwareEntity {
                     // CLIENT-SIDE: Only handle GUI opening when dialogues are received
                     // Remove the chat message here - it doesn't belong in sneak interaction
                     if (this.dialoguesReceived) {
-                        CiviliansMod.LOGGER.info("[CiviliansMod] Opening dialogue GUI for NPC {}", this.getId());
+                        CiviliansMod.LOGGER.info("[CiviliansMod] Opening GUI for NPC {}", this.getId());
                         openCustomNPCScreen();
                     } else {
                         CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues yet for NPC {}", this.getId());

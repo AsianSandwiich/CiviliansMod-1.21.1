@@ -12,6 +12,8 @@ import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
+import net.minecraft.client.MinecraftClient;
+import net.asian.civiliansmod.gui.CustomChatScreen;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -46,15 +48,25 @@ public record DialogueSyncPayload(int npcId, String info) implements CustomPaylo
 
     public void handlePacket(ClientPlayNetworking.Context context) {
         if (!(context.player().getWorld() instanceof World world)) return;
-        if (!(world.getEntityById(this.npcId) instanceof NPCEntity)) {
+        if (!(world.getEntityById(this.npcId) instanceof NPCEntity entity)) {
             return;
         }
-        NPCEntity entity = (NPCEntity) world.getEntityById(npcId);
         var type = new TypeToken<Map<String, Map<NpcChat.ChatReason, List<String>>>>() {}.getType();
         try {
             Map<String, Map<NpcChat.ChatReason, List<String>>> dialogueMap = new Gson().fromJson(decompress(info), type);
             entity.getChatHandler().setDialogues(dialogueMap);
             entity.dialoguesReceived = true;
+
+            MinecraftClient client = MinecraftClient.getInstance();
+            client.execute(() -> {
+                // sync again later
+                client.execute(() -> {
+                    if (client.currentScreen instanceof CustomChatScreen screen) {
+                        CiviliansMod.LOGGER.info("[CiviliansMod] Refreshing CustomChatScreen after dialogue sync for NPC " + npcId);
+                        screen.fullInit();
+                    }
+                });
+            });
         } catch (Exception e) {
             e.printStackTrace();
         }
