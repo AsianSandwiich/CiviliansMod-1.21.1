@@ -1,5 +1,6 @@
 package net.asian.civiliansmod.gui;
 
+import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.widgets.ChatReasonEntryScrollContainer;
 import net.asian.civiliansmod.gui.widgets.GlobalChatScrollWidget;
@@ -20,42 +21,38 @@ public class CustomChatScreen extends AbstractConfigScreen {
         chatScrollWidget = new GlobalChatScrollWidget(npc, MinecraftClient.getInstance(), 236, 134, 0, 0, 10, this);
     }
 
-
     @Override
     public void init() {
+        super.init();
         int x = width / 2;
         int y = height / 2;
-        super.init();
+
         chatScrollWidget.setX(x - 114);
         chatScrollWidget.setY(y - 60);
+        chatScrollWidget.refreshChildren();
         this.addDrawableChild(chatScrollWidget);
     }
 
     public void fullInit() {
-        int x = width / 2;
-        int y = height / 2;
         List<Boolean> openList = new ArrayList<>();
         double offsetY = chatScrollWidget.getScrollAmount();
-        chatScrollWidget.children().forEach(chatReasonEntryScrollContainer -> {
-            openList.add(chatReasonEntryScrollContainer.getOpen());
-        });
 
-        chatScrollWidget = new GlobalChatScrollWidget(npc, MinecraftClient.getInstance(), 236, 134, x - 114, y - 60, 10, this);
+        chatScrollWidget.children().forEach(container -> openList.add(container.getOpen()));
+        chatScrollWidget.refreshChildren();
         chatScrollWidget.setScrollAmount(Math.min(offsetY, chatScrollWidget.getMaxScroll()));
         chatScrollWidget.refreshScroll();
 
-        for(int i = 0; i<chatScrollWidget.children().size(); i++ ) {
-            ChatReasonEntryScrollContainer container = chatScrollWidget.children().get(i);
-            boolean open = openList.get(i);
-            container.setOpen(open);
+        for (int i = 0; i < chatScrollWidget.children().size() && i < openList.size(); i++) {
+            chatScrollWidget.children().get(i).setOpen(openList.get(i));
         }
-        this.addDrawableChild(chatScrollWidget);
-        super.init();
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
+        if (chatScrollWidget != null) {
+            chatScrollWidget.renderWidget(context, mouseX, mouseY, delta);
+        }
     }
 
     @Override

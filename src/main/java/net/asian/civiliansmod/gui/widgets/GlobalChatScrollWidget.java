@@ -9,29 +9,40 @@ import net.minecraft.client.gui.widget.ElementListWidget;
 import net.minecraft.util.math.MathHelper;
 
 public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScrollContainer> {
+    NPCEntity npc;
+    CustomChatScreen screen;
+
     public GlobalChatScrollWidget(NPCEntity npc, MinecraftClient minecraftClient, int width, int height, int x, int y, int itemHeight, CustomChatScreen screen) {
         super(minecraftClient, width, height, y, itemHeight);
-        npc.getChatHandler().getTranslatedDialogues(minecraftClient.getLanguageManager().getLanguage()).forEach((chatReason, strings) -> {
-            this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen));
-        });
-
+        this.npc = npc;
+        this.screen = screen;
         this.setRenderHeader(false, 0);
         this.setPosition(x, y);
+        refreshChildren();
     }
+
+    public void refreshChildren() {
+        this.children().clear();
+        npc.getChatHandler().getTranslatedDialogues(MinecraftClient.getInstance().getLanguageManager().getLanguage())
+                .forEach((chatReason, strings) -> {
+                    System.out.println("[CiviliansMod] Loading " + (strings != null ? strings.size() : 0) + " entries for reason: " + chatReason);
+                    if (strings != null && !strings.isEmpty()) {
+                        this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen));
+                    }
+                });
+        }
 
     @Override
     public int getRowLeft() {
         return this.getX();
     }
 
-    @Override
     public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         this.enableScissor(context);
         this.renderList(context, mouseX, mouseY, delta);
         context.disableScissor();
         renderScrollBar(context);
     }
-
 
     protected void renderScrollBar(DrawContext context) {
         if (this.isScrollbarVisible()) {
@@ -81,6 +92,7 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
         int y = this.getY() - (int) this.getScrollAmount();
         for (int i = 0; i < entryCount; i++) {
             ChatReasonEntryScrollContainer entry = this.children().get(i);
+            System.out.println("[CiviliansMod] Rendering entry " + i + " with height " + entry.getHeight());
             int entryHeight = entry.getHeight();
 
             if (y + entryHeight >= this.getY() && y <= this.getBottom()) {
