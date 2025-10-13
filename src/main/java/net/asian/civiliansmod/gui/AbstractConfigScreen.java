@@ -38,15 +38,13 @@ public class AbstractConfigScreen extends Screen {
             client.execute(() -> {
                 client.setScreen(new CustomChatScreen(npc));
 
-                // Nach ganz kurzer Verzögerung nochmal prüfen
-                client.execute(() -> {
-                    if (npc.dialoguesReceived && client.currentScreen instanceof CustomChatScreen screen) {
-                        CiviliansMod.LOGGER.info("[CiviliansMod] Initializing CustomChatScreen after dialogue sync for NPC " + npc.getId());
-                        screen.fullInit();
-                    }
-                });
+                        // check again if customchat screen is not open
+                if (npc.dialoguesReceived && client.currentScreen instanceof CustomChatScreen screen) {
+                    CiviliansMod.LOGGER.info("[CiviliansMod] Initializing CustomChatScreen after dialogue sync for NPC " + npc.getId());
+                    screen.fullInit();
+                }
             });
-            },
+        },
         0xFFFFFFFF, chatSelectionColor);
 
         this.addDrawableChild(skinSelection);
