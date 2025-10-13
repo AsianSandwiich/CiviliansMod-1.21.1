@@ -20,7 +20,7 @@ public class NpcChat {
     public static String getRandomChat(ChatReason reason, String language) {
         List<String> chat = dialogues.get(reason);
         if (chat == null || chat.isEmpty()) {
-            // fallback auf DefaultChat
+            // fallback to DefaultChat
             Map<NpcChat.ChatReason, List<String>> defaultLang = DefaultChat.getDefaultChat()
                     .getOrDefault(language, DefaultChat.getDefaultChat().get("en_us"));
             chat = defaultLang.getOrDefault(reason, Collections.singletonList("..."));
