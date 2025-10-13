@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
@@ -54,8 +55,30 @@ public record DialogueSyncPayload(int npcId, String info) implements CustomPaylo
         var type = new TypeToken<Map<String, Map<NpcChat.ChatReason, List<String>>>>() {}.getType();
         try {
             Map<String, Map<NpcChat.ChatReason, List<String>>> dialogueMap = new Gson().fromJson(decompress(info), type);
-            entity.getChatHandler().setDialogues(dialogueMap);
-            entity.dialoguesReceived = true;
+            String clientLanguage = MinecraftClient.getInstance().getLanguageManager().getLanguage();
+            Map<NpcChat.ChatReason, List<String>> dialoguesForLanguage = dialogueMap.get(clientLanguage);
+
+            //fallback to en_us
+            if (dialoguesForLanguage == null) {
+                dialoguesForLanguage = dialogueMap.get("en_us");
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues for language {}, falling back to en_us", clientLanguage);
+            }
+            //fallback if en_us not available (only if error in the gen files)
+            if (dialoguesForLanguage == null && !dialogueMap.isEmpty()) {
+                dialoguesForLanguage = dialogueMap.values().iterator().next();
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No en_us dialogues, using first available language");
+            }
+
+            if (dialoguesForLanguage != null) {
+                Map<String, Map<NpcChat.ChatReason, List<String>>> correctLanguage = new HashMap<>();
+                correctLanguage.put(clientLanguage, dialoguesForLanguage);
+
+                entity.getChatHandler().setDialogues(correctLanguage);
+                entity.dialoguesReceived = true;
+                CiviliansMod.LOGGER.info("[CiviliansMod] Set {} dialogues for NPC {}", dialoguesForLanguage.size(), npcId);
+            } else {
+                CiviliansMod.LOGGER.error("[CiviliansMod] No dialogues available for NPC {}", npcId);
+            }
 
             MinecraftClient client = MinecraftClient.getInstance();
             client.execute(() -> {
