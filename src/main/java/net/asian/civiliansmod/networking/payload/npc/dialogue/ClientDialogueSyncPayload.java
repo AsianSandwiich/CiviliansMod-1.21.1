@@ -33,7 +33,7 @@ public record ClientDialogueSyncPayload(UUID npcUuid) implements CustomPayload {
                     context.player(),
                     new DialogueSyncPayload(
                             entity.getId(),
-                            entity.getChatManager().getDialogues()
+                            entity.getChatHandler().getDialogues()
                     ));
         } catch (Exception e) {
             e.printStackTrace();

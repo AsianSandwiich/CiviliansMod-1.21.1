@@ -56,7 +56,7 @@ public class CiviliansMod implements ModInitializer {
                 UUID playerId = player.getUuid();
                 if (!npc.hasSentTo(playerId)) {
                     npc.markSentTo(playerId);
-                    ServerPlayNetworking.send(player, new OpenScreenDialoguesPayload(npc.getId(), npc.getChatManager().getDialogues()));
+                    ServerPlayNetworking.send(player, new OpenScreenDialoguesPayload(npc.getId(), npc.getChatHandler().getDialogues()));
                 }
             }
         });

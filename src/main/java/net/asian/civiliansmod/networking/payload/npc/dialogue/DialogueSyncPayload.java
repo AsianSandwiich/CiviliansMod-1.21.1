@@ -53,7 +53,7 @@ public record DialogueSyncPayload(int npcId, String info) implements CustomPaylo
         var type = new TypeToken<Map<String, Map<NpcChat.ChatReason, List<String>>>>() {}.getType();
         try {
             Map<String, Map<NpcChat.ChatReason, List<String>>> dialogueMap = new Gson().fromJson(decompress(info), type);
-            entity.getChatManager().setDialogue(dialogueMap);
+            entity.getChatHandler().setDialogues(dialogueMap);
             entity.dialoguesReceived = true;
         } catch (Exception e) {
             e.printStackTrace();
