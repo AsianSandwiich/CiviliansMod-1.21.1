@@ -28,7 +28,7 @@ public class DialogueEntry extends AbstractDialogueEntry {
         deleteWidget = new DeleteWidget(x + 40, y, 10, 10, button -> {
             ConfirmScreen confirmScreen = new ConfirmScreen(screen, button1 -> {
                 String language = MinecraftClient.getInstance().getLanguageManager().getLanguage();
-                npc.getChatHandler().getTranslatedDialogues(language).computeIfAbsent(chatReason, (o) -> new ArrayList<>()).remove(dialogue);
+                npc.getChatManager().getTranslatedDialogues(language).computeIfAbsent(chatReason, (o) -> new ArrayList<>()).remove(dialogue);
                 RemoveDialoguePayload payload = new RemoveDialoguePayload(npc.getUuid(), language, chatReason.toString(), dialogue);
                 ClientPlayNetworking.send(payload);
                 screen.fullInit();
