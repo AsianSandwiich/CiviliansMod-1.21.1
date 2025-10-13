@@ -29,31 +29,65 @@ public class NpcChat {
     }
 
     private static void collect() {
-        Path customDialogue = FolderUtil.DIALOGUES_PATH.resolve(MinecraftClient.getInstance().getLanguageManager().getLanguage() + ".json");
-        if(!customDialogue.toFile().exists()){
-            customDialogue = FolderUtil.DIALOGUES_PATH.resolve("en_us.json");
-            if(!customDialogue.toFile().exists())
-                return;
-        }
+        dialogues.clear(); //build allways
+
+        String languageCode = MinecraftClient.getInstance().getLanguageManager().getLanguage();
+        Path customDialogue = FolderUtil.DIALOGUES_PATH.resolve(languageCode + ".json");
+        JsonObject customcontent = null;
 
         try {
-            String jsonContent = Files.readString(customDialogue);
+            if(Files.exists(customDialogue)) {
+                CiviliansMod.LOGGER.info("Loading dialogues for language {}", languageCode);
+                String CustomJsonDialogue = Files.readString(customDialogue);
+                customcontent = JsonParser.parseString(CustomJsonDialogue).getAsJsonObject();
 
-            JsonObject content = JsonParser.parseString(jsonContent).getAsJsonObject();
-
-            for(NpcChat.ChatReason reasons : NpcChat.ChatReason.values()) {
-                List<String> dialogues = new ArrayList<>();
-                JsonArray jsonArray = content.get(reasons.getName()).getAsJsonArray();
-                for(JsonElement jsonElement : jsonArray) {
-                    dialogues.add(jsonElement.getAsString());
+            } else {
+                //Default Dialouge Fallback to en_us.json
+                Path defaultFallbackDialogue = FolderUtil.DIALOGUES_PATH.resolve("en_us.json");
+                if (Files.exists(defaultFallbackDialogue)) {
+                    CiviliansMod.LOGGER.info("Falling back to default en_us dialogues");
+                    String CustomJsonDialouge = Files.readString(defaultFallbackDialogue);
+                    customcontent = JsonParser.parseString(CustomJsonDialouge).getAsJsonObject();
+                } else {
+                    CiviliansMod.LOGGER.warn("No custom dialogues found – using built-in DefaultChat");
                 }
-                NpcChat.dialogues.put(reasons, dialogues);
             }
-
         } catch (IOException e) {
-            e.printStackTrace();
+            CiviliansMod.LOGGER.error("Couldn't read default dialogue JSON", e);
         }
 
+        if (customcontent == null) {
+                Map<String, Map<NpcChat.ChatReason, List<String>>> fallback = DefaultChat.getDefaultChat();
+                Map<NpcChat.ChatReason, List<String>> englishFallback = fallback.getOrDefault("en_us", Collections.emptyMap());
+                for (ChatReason reason : ChatReason.values()) {
+                    List<String> list = new ArrayList<>(englishFallback.getOrDefault(reason, Collections.singletonList("...")));
+                    dialogues.put(reason, list);
+                }
+                return;
+            }
+
+        // read jsons
+        for (ChatReason reason : ChatReason.values()) {
+            List<String> reasons = new ArrayList<>();
+
+            if (customcontent.has(reason.getName())) {
+                JsonArray jsonArray = customcontent.get(reason.getName()).getAsJsonArray();
+                for (JsonElement element : jsonArray) {
+                    reasons.add(element.getAsString());
+                }
+            }
+
+            // if json no entrys, add default
+            if (reasons.isEmpty()) {
+                Map<String, Map<NpcChat.ChatReason, List<String>>> defaults = DefaultChat.getDefaultChat();
+                Map<NpcChat.ChatReason, List<String>> englishDefaults = defaults.getOrDefault("en_us", Collections.emptyMap());
+                reasons.addAll(englishDefaults.getOrDefault(reason, Collections.singletonList("...")));
+                CiviliansMod.LOGGER.warn("Missing JSON section for '{}', using defaults.", reason.getName());
+            }
+
+            dialogues.put(reason, reasons);
+            CiviliansMod.LOGGER.info("Loaded {} dialogues for {}", reasons.size(), reason.getName());
+        }
     }
 
     public enum ChatReason {

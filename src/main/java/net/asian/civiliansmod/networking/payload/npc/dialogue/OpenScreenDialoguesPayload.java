@@ -45,8 +45,9 @@ public record OpenScreenDialoguesPayload(int npcId, String dialogue) implements 
         NPCEntity entity = (NPCEntity) world.getEntityById(npcId);
         var type = new TypeToken<Map<String, Map<NpcChat.ChatReason, List<String>>>>() {}.getType();
         Map<String, Map<NpcChat.ChatReason, List<String>>> dialogueMap = new Gson().fromJson(dialogue, type);
-        entity.getChatManager().setDialogue(dialogueMap);
+        entity.getChatHandler().setDialogues(dialogueMap);
         entity.dialoguesReceived = true;
+        CiviliansMod.LOGGER.info("[CiviliansMod] Dialogues received for NPC " + npcId);
 
     }
 }
