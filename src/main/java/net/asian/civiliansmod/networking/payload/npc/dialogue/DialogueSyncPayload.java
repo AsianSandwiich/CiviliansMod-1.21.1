@@ -73,7 +73,7 @@ public record DialogueSyncPayload(int npcId, String info) implements CustomPaylo
                 Map<String, Map<NpcChat.ChatReason, List<String>>> correctLanguage = new HashMap<>();
                 correctLanguage.put(clientLanguage, dialoguesForLanguage);
 
-                entity.getChatHandler().setDialogues(correctLanguage);
+                entity.getChatManager().setDialogues(correctLanguage);
                 entity.dialoguesReceived = true;
                 CiviliansMod.LOGGER.info("[CiviliansMod] Set {} dialogues for NPC {}", dialoguesForLanguage.size(), npcId);
             } else {

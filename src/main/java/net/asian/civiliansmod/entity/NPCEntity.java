@@ -72,24 +72,17 @@ public class NPCEntity extends PathAwareEntity {
     @Environment(EnvType.CLIENT)
     public boolean dialoguesReceived;
 
-
-    public NpcChatHandler getChatHandler() {
-        return chatHandler;
-    }
-
     public SkinManager getSkinManager() {
         return skinManager;
     }
-
     public NameManager getNameManager() {
         return nameManager;
     }
+    public ChatManager getChatManager() { return chatManager; }
 
-    NameManager nameManager = new NameManager(this);
     SkinManager skinManager = new SkinManager(this);
-
-    NpcChatHandler chatHandler = new NpcChatHandler(this);
-
+    NameManager nameManager = new NameManager(this);
+    ChatManager chatManager = new ChatManager(this);
 
     @Override
     public void onSpawnPacket(EntitySpawnS2CPacket packet) {
@@ -132,7 +125,7 @@ public class NPCEntity extends PathAwareEntity {
 
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
-        this.chatHandler = new NpcChatHandler(this);
+        this.chatManager = new ChatManager(this);
         super.initDataTracker(builder);
         builder.add(IS_PAUSED, false);
         builder.add(IS_FOLLOWING, false);
@@ -166,7 +159,7 @@ public class NPCEntity extends PathAwareEntity {
         // Save the variant to NBT
         nbt.putBoolean("IsPaused", this.isPaused());
         nbt.putBoolean("IsFollowing", this.isFollowing());
-        nbt.put("dialogues", chatHandler.saveDialogues());
+        nbt.put("dialogues", chatManager.saveDialogues());
         this.skinManager.writeNbt(nbt);
     }
 
@@ -180,7 +173,7 @@ public class NPCEntity extends PathAwareEntity {
             this.setFollowing(nbt.getBoolean("IsFollowing").orElse(false));
         }
         if (nbt.contains("dialogues")) {
-            this.chatHandler.setFromNbt(nbt.getCompound("dialogues"));
+            this.chatManager.setFromNbt(nbt.getCompound("dialogues"));
         }
         this.skinManager.readNbt(nbt);
     }
@@ -218,7 +211,7 @@ public class NPCEntity extends PathAwareEntity {
 
 
                 if (source.getAttacker() instanceof PlayerEntity player) {
-                    String hitDialogue = chatHandler.getRandomChat(CiviliansMod.playerLanguages.get(player.getUuid()), NpcChat.ChatReason.HURT);
+                    String hitDialogue = chatManager.getRandomChat(CiviliansMod.playerLanguages.get(player.getUuid()), NpcChat.ChatReason.HURT);
                     player.sendMessage(Text.literal(npcName + ": " + hitDialogue), true);
 
                 }
@@ -274,7 +267,7 @@ public class NPCEntity extends PathAwareEntity {
                     // Only send dialogue payload if not already sent
                     if (player instanceof ServerPlayerEntity serverPlayer && !hasSentTo(player.getUuid())) {
                         markSentTo(player.getUuid());
-                        OpenScreenDialoguesPayload openScreenDialoguesPayload = new OpenScreenDialoguesPayload(this.getId(), this.chatHandler.getDialogues());
+                        OpenScreenDialoguesPayload openScreenDialoguesPayload = new OpenScreenDialoguesPayload(this.getId(), this.chatManager.getDialogues());
                         ServerPlayNetworking.send(serverPlayer, openScreenDialoguesPayload);
                         CiviliansMod.LOGGER.info("[CiviliansMod] Sent dialogues for NPC {}", this.getId());
                     }
@@ -304,7 +297,7 @@ public class NPCEntity extends PathAwareEntity {
 
                     Text nameText = this.getCustomName();
                     String npcName = nameText != null ? nameText.getString() : "NPC";
-                    String dialogue = chatHandler.getRandomChat(CiviliansMod.playerLanguages.get(player.getUuid()), NpcChat.ChatReason.INTERACT);
+                    String dialogue = chatManager.getRandomChat(CiviliansMod.playerLanguages.get(player.getUuid()), NpcChat.ChatReason.INTERACT);
                     player.sendMessage(Text.literal(npcName + ": " + dialogue));
                 }
                 return ActionResult.SUCCESS;
@@ -483,11 +476,11 @@ public class NPCEntity extends PathAwareEntity {
         sent.add(playerId);
     }
 
-    public static class NpcChatHandler {
+    public static class ChatManager {
         NPCEntity npc;
         Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues;
 
-        public NpcChatHandler(NPCEntity npc) {
+        public ChatManager(NPCEntity npc) {
             this.npc = npc;
             this.dialogues = new HashMap<>(DefaultChat.getDefaultChat());
         }
@@ -500,20 +493,28 @@ public class NPCEntity extends PathAwareEntity {
             return messages.get(Random.create().nextInt(messages.size()));
         }
 
-        public Map<NpcChat.ChatReason, List<String>> getTranslatedDialogues(String language) {
-            Map<NpcChat.ChatReason, List<String>> chatlanguage = dialogues.get(language);
+        public Map<NpcChat.ChatReason, List<String>> getDialoguesForLanguage(String language) {
+            Map<NpcChat.ChatReason, List<String>> languageMap = dialogues.get(language);
             // fallback
-            if (chatlanguage == null) {
-                chatlanguage = dialogues.get("en_us");
-                CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues for language {}, falling back to en_us", language);
+            if (languageMap == null || languageMap.isEmpty()) {
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues for language {}, falling back to en_us", language, npc.getId());
+                languageMap = DefaultChat.getDefaultChat().get("en_us");
             }
             //fallback if en_us is not available on error
-            if (chatlanguage == null && !dialogues.isEmpty()) {
-                chatlanguage = dialogues.values().iterator().next();
-                CiviliansMod.LOGGER.warn("[CiviliansMod] No en_us dialogues, using first available language");
+            if (languageMap == null && !dialogues.isEmpty()) {
+                languageMap = dialogues.values().iterator().next();
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No en_us dialogues, using first available language for NPC {}", npc.getId());
+            }
+            //fallback if nothing works to DefaultChat
+            if (languageMap == null) {
+                CiviliansMod.LOGGER.warn("[CiviliansMod] DefaultChat is empty for en_us dialogues, using first available language for NPC {}", npc.getId());
+                languageMap = new EnumMap<>(NpcChat.ChatReason.class);
             }
 
-            return chatlanguage != null ? chatlanguage : new LinkedHashMap<>();
+            return languageMap != null ? languageMap : new EnumMap<>(NpcChat.ChatReason.class);
+        }
+        public Map<NpcChat.ChatReason, List<String>> getTranslatedDialogues(String language) {
+            return getDialoguesForLanguage(language);
         }
 
         public NbtCompound saveDialogues() {
@@ -579,6 +580,9 @@ public class NPCEntity extends PathAwareEntity {
                     }
                 }
                 dialogues.put(language, reasonMap);
+            }
+            if (dialogues.isEmpty()) {
+                dialogues.putAll(DefaultChat.getDefaultChat());
             }
         }
 

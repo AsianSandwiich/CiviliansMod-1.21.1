@@ -36,7 +36,7 @@ public record AddDialoguePayload(UUID npcUuid, String chatReason, String languag
     public void handlePacket(ServerPlayNetworking.Context context) {
         if (!(context.player().getWorld() instanceof ServerWorld world)) return;
         if (!(world.getEntity(this.npcUuid) instanceof NPCEntity entity)) return;
-        entity.getChatHandler().getDialogues().computeIfAbsent(language, (i) -> new HashMap<>()).computeIfAbsent(NpcChat.ChatReason.valueOf(chatReason), (o) -> new ArrayList<>()).add(dialogue);
-        entity.getChatHandler().markDialoguesDirty(context.player().getUuid());
+        entity.getChatManager().getDialogues().computeIfAbsent(language, (i) -> new HashMap<>()).computeIfAbsent(NpcChat.ChatReason.valueOf(chatReason), (o) -> new ArrayList<>()).add(dialogue);
+        entity.getChatManager().markDialoguesDirty(context.player().getUuid());
     }
 }

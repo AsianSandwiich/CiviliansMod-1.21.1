@@ -24,7 +24,7 @@ public class AddDialogueScreen extends AbstractDialogueEditionScreen {
         super.init();
         TextButtonWidget addButton = new TextButtonWidget(x + 6, y + 30, 60, 15, Text.translatable("civilians.gui.add"), button -> {
             String language = MinecraftClient.getInstance().getLanguageManager().getLanguage();
-            npc.getChatHandler().getTranslatedDialogues(language).computeIfAbsent(reason, (o) -> new ArrayList<>()).add(this.textFieldWidget.getText());
+            npc.getChatManager().getTranslatedDialogues(language).computeIfAbsent(reason, (o) -> new ArrayList<>()).add(this.textFieldWidget.getText());
             parent.fullInit();
             AddDialoguePayload payload = new AddDialoguePayload(npc.getUuid(), reason.toString(), language, this.textFieldWidget.getText());
             ClientPlayNetworking.send(payload);

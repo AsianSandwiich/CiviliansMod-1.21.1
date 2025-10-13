@@ -27,9 +27,9 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
 
     public void refreshChildren() {
         this.children().clear();
-        npc.getChatHandler().getTranslatedDialogues(MinecraftClient.getInstance().getLanguageManager().getLanguage())
+        npc.getChatManager().getTranslatedDialogues(MinecraftClient.getInstance().getLanguageManager().getLanguage())
                 .forEach((chatReason, strings) -> {
-                    System.out.println("[CiviliansMod] Loading " + (strings != null ? strings.size() : 0) + " entries for reason: " + chatReason);
+                    // Debug log: System.out.println("[CiviliansMod] Loading " + (strings != null ? strings.size() : 0) + " entries for reason: " + chatReason);
                     if (strings != null && !strings.isEmpty()) {
                         this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen));
                     }
