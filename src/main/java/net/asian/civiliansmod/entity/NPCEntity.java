@@ -505,10 +505,19 @@ public class NPCEntity extends PathAwareEntity {
         }
 
         public Map<NpcChat.ChatReason, List<String>> getTranslatedDialogues(String language) {
-            if (!dialogues.containsKey(language)) {
-                return new LinkedHashMap<>();
+            Map<NpcChat.ChatReason, List<String>> chatlanguage = dialogues.get(language);
+            // fallback
+            if (chatlanguage == null) {
+                chatlanguage = dialogues.get("en_us");
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues for language {}, falling back to en_us", language);
             }
-            return dialogues.get(language);
+            //fallback if en_us is not available on error
+            if (chatlanguage == null && !dialogues.isEmpty()) {
+                chatlanguage = dialogues.values().iterator().next();
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No en_us dialogues, using first available language");
+            }
+
+            return chatlanguage != null ? chatlanguage : new LinkedHashMap<>();
         }
 
         public NbtCompound saveDialogues() {
