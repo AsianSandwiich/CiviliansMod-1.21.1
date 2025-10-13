@@ -52,7 +52,7 @@ public record OpenScreenDialoguesPayload(int npcId, String dialogue) implements 
         }.getType();
         Map<String, Map<NpcChat.ChatReason, List<String>>> dialogueMap = new Gson().fromJson(dialogue, type);
 
-        npc.getChatHandler().setDialogues(dialogueMap);
+        npc.getChatManager().setDialogues(dialogueMap);
         npc.dialoguesReceived = true;
         CiviliansMod.LOGGER.info("[CiviliansMod] Dialogues received for NPC " + npcId);
         MinecraftClient.getInstance().execute(() -> {

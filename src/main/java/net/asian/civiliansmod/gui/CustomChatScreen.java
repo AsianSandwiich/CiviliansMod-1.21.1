@@ -15,6 +15,7 @@ import java.util.List;
 
 public class CustomChatScreen extends AbstractConfigScreen {
     GlobalChatScrollWidget chatScrollWidget;
+    private boolean screenInitialized = false; // screen is initialized? true if yes
 
     public CustomChatScreen(NPCEntity npc) {
         super(npc, Text.of("civilians.gui.chat_title"));
@@ -31,6 +32,8 @@ public class CustomChatScreen extends AbstractConfigScreen {
         chatScrollWidget.setY(y - 60);
         chatScrollWidget.refreshChildren();
         this.addDrawableChild(chatScrollWidget);
+
+        screenInitialized = true; //now it should be initialized
     }
 
     public void fullInit() {
@@ -50,7 +53,7 @@ public class CustomChatScreen extends AbstractConfigScreen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
-        if (chatScrollWidget != null) {
+        if (chatScrollWidget != null && screenInitialized) {
             chatScrollWidget.renderWidget(context, mouseX, mouseY, delta);
         }
     }
@@ -69,5 +72,12 @@ public class CustomChatScreen extends AbstractConfigScreen {
         if (chatScrollWidget.isMouseOver(mouseX, mouseY))
             chatScrollWidget.onClick(mouseX, mouseY);
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    //after close reset the screen is initialized
+    @Override
+    public void close() {
+        screenInitialized = false;
+        super.close();
     }
 }
