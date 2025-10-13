@@ -36,7 +36,7 @@ public record RemoveDialoguePayload(UUID npcUuid, String language, String chatRe
     public void handlePacket(ServerPlayNetworking.Context context) {
         if (!(context.player().getWorld() instanceof ServerWorld world)) return;
         if (!(world.getEntity(this.npcUuid) instanceof NPCEntity entity)) return;
-        entity.getChatManager().getDialogues().computeIfAbsent(language, (i) -> new HashMap<>()).computeIfAbsent(NpcChat.ChatReason.valueOf(chatReason), (o) -> new ArrayList<>()).remove(dialogue);
-        entity.getChatManager().markDialoguesDirty(context.player().getUuid());
+        entity.getChatHandler().getDialogues().computeIfAbsent(language, (i) -> new HashMap<>()).computeIfAbsent(NpcChat.ChatReason.valueOf(chatReason), (o) -> new ArrayList<>()).remove(dialogue);
+        entity.getChatHandler().markDialoguesDirty(context.player().getUuid());
     }
 }

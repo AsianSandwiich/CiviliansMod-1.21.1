@@ -26,7 +26,7 @@ public class EditDialogueScreen extends AbstractDialogueEditionScreen {
         super.init();
         TextButtonWidget saveButton = new TextButtonWidget(x + 6, y + 30, 60, 15, Text.translatable("civilians.gui.save"), button -> {
             String language = MinecraftClient.getInstance().getLanguageManager().getLanguage();
-            npc.getChatManager().getTranslatedDialogues(language).computeIfAbsent(reason, (o) -> new ArrayList<>()).set(index, this.textFieldWidget.getText());
+            npc.getChatHandler().getTranslatedDialogues(language).computeIfAbsent(reason, (o) -> new ArrayList<>()).set(index, this.textFieldWidget.getText());
             parent.fullInit();
             EditDialoguePayload payload = new EditDialoguePayload(npc.getUuid(), language, reason.toString(), index, this.textFieldWidget.getText());
             ClientPlayNetworking.send(payload);
