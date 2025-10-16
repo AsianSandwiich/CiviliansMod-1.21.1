@@ -16,31 +16,44 @@ import java.util.*;
 
 public class NpcChat {
     public static Map<ChatReason, List<String>> dialogues = new LinkedHashMap<>();
+    private static String currentLoadedLanguage = "en_us";
 
-    public static String getRandomChat(ChatReason reason, String language) {
-        List<String> chat = dialogues.get(reason);
-        if (chat == null || chat.isEmpty()) {
-            // fallback with null check
-            Map<String, Map<NpcChat.ChatReason, List<String>>> defaultChats = DefaultChat.getDefaultChat();
-
-            // moreFallback
-            Map<NpcChat.ChatReason, List<String>> defaultLang = defaultChats.get(language);
-            if (defaultLang == null) {
-                CiviliansMod.LOGGER.debug("Language {} not found in defaults, falling back to en_us", language);
-                defaultLang = defaultChats.get("en_us");
-            }
-            if (defaultLang == null) {
-                CiviliansMod.LOGGER.debug("en_us not found, using first available language");
-                defaultLang = defaultChats.values().stream().findFirst().orElse(Collections.emptyMap());
-            }
-
-            chat = defaultLang.getOrDefault(reason, Collections.singletonList("..."));
-            CiviliansMod.LOGGER.debug("Using fallback chat for reason: {}, language: {}", reason.getName(), language);
+    public static String getRandomChat(ChatReason reason, String requestedLanguage) {
+        //is requested language loaded?
+        if (!requestedLanguage.equals(currentLoadedLanguage)) {
+            CiviliansMod.LOGGER.debug("Language changed from {} to {}, reloading dialogues", currentLoadedLanguage, requestedLanguage);
+            loadLanguage(requestedLanguage);
         }
 
-        // safetyfallback if nothing works
+        List<String> languagechat = dialogues.get(reason);
+
+        if (languagechat == null || languagechat.isEmpty()) {
+            CiviliansMod.LOGGER.debug("No dialogues loaded for reason: {}, using internal defaults", reason.getName());
+            return getInternalFallback(reason, requestedLanguage);
+        }
+
+        return languagechat.get(Random.create().nextInt(languagechat.size()));
+    }
+
+    private static String getInternalFallback(ChatReason reason, String language) {
+        Map<String, Map<ChatReason, List<String>>> defaultChats = DefaultChat.getDefaultChat();
+        Map<ChatReason, List<String>> languageChats = defaultChats.get(language);
+
+        if (languageChats == null || languageChats.isEmpty()) {
+            CiviliansMod.LOGGER.debug("Language {} not found in internal defaults, falling back to en_us", language);
+            languageChats = defaultChats.get("en_us");
+        }
+
+        if (languageChats == null || languageChats.isEmpty()) {
+            CiviliansMod.LOGGER.debug("en_us not found, using first available language");
+            languageChats = defaultChats.values().stream().findFirst().orElse(Collections.emptyMap());
+        }
+
+        List<String> chat = languageChats.get(reason);
+
         if (chat == null || chat.isEmpty()) {
-            CiviliansMod.LOGGER.warn("No chat available for reason: {}, returning default", reason.getName());
+            CiviliansMod.LOGGER.warn("No chat found for reason: {} in language: {}, using default",
+                    reason.getName(), language);
             return "...";
         }
 
@@ -48,26 +61,37 @@ public class NpcChat {
     }
 
     public static void registerChat() {
-        CiviliansMod.LOGGER.info("Registering dialogues");
-        collect();
+        CiviliansMod.LOGGER.info("Registering dialogues from internal defaults");
+        loadLanguage(getCurrentLanguage());
     }
 
     public static void refresh(){
-        collect();
+        CiviliansMod.LOGGER.info("Refreshing dialogues from internal defaults");
+        loadLanguage(getCurrentLanguage());
     }
 
-    private static void collect() {
-        dialogues.clear(); //build allways
-
-        String languageCode = "en_us";
+    private static String getCurrentLanguage() {
         try {
             if (MinecraftClient.getInstance() != null &&
                     MinecraftClient.getInstance().getLanguageManager() != null) {
-                languageCode = MinecraftClient.getInstance().getLanguageManager().getLanguage();
+                return MinecraftClient.getInstance().getLanguageManager().getLanguage();
             }
         } catch (Exception e) {
             CiviliansMod.LOGGER.warn("Could not determine language, using en_us as fallback", e);
         }
+        return "en_us";
+    }
+
+    private static void loadLanguage(String languageCode) {
+        dialogues.clear(); //build allways
+
+        if (languageCode == null || languageCode.isEmpty()) {
+            languageCode = getCurrentLanguage();
+            CiviliansMod.LOGGER.debug("No language provided, using current client language: {}", languageCode);
+        }
+
+        currentLoadedLanguage = languageCode;
+
         Path customDialogue = FolderUtil.DIALOGUES_PATH.resolve(languageCode + ".json");
         JsonObject customcontent = null;
 
