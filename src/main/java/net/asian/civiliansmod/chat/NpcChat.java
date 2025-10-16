@@ -21,11 +21,30 @@ public class NpcChat {
     public static String getRandomChat(ChatReason reason, String language) {
         List<String> chat = dialogues.get(reason);
         if (chat == null || chat.isEmpty()) {
-            // fallback to DefaultChat
-            Map<NpcChat.ChatReason, List<String>> defaultLang = DefaultChat.getDefaultChat()
-                    .getOrDefault(language, DefaultChat.getDefaultChat().get("en_us"));
+            // fallback with null check
+            Map<String, Map<NpcChat.ChatReason, List<String>>> defaultChats = DefaultChat.getDefaultChat();
+
+            // moreFallback
+            Map<NpcChat.ChatReason, List<String>> defaultLang = defaultChats.get(language);
+            if (defaultLang == null) {
+                CiviliansMod.LOGGER.debug("Language {} not found in defaults, falling back to en_us", language);
+                defaultLang = defaultChats.get("en_us");
+            }
+            if (defaultLang == null) {
+                CiviliansMod.LOGGER.debug("en_us not found, using first available language");
+                defaultLang = defaultChats.values().stream().findFirst().orElse(Collections.emptyMap());
+            }
+
             chat = defaultLang.getOrDefault(reason, Collections.singletonList("..."));
+            CiviliansMod.LOGGER.debug("Using fallback chat for reason: {}, language: {}", reason.getName(), language);
         }
+
+        // safetyfallback if nothing works
+        if (chat == null || chat.isEmpty()) {
+            CiviliansMod.LOGGER.warn("No chat available for reason: {}, returning default", reason.getName());
+            return "...";
+        }
+
         return chat.get(Random.create().nextInt(chat.size()));
     }
 
@@ -41,7 +60,15 @@ public class NpcChat {
     private static void collect() {
         dialogues.clear(); //build allways
 
-        String languageCode = MinecraftClient.getInstance().getLanguageManager().getLanguage();
+        String languageCode = "en_us";
+        try {
+            if (MinecraftClient.getInstance() != null &&
+                    MinecraftClient.getInstance().getLanguageManager() != null) {
+                languageCode = MinecraftClient.getInstance().getLanguageManager().getLanguage();
+            }
+        } catch (Exception e) {
+            CiviliansMod.LOGGER.warn("Could not determine language, using en_us as fallback", e);
+        }
         Path customDialogue = FolderUtil.DIALOGUES_PATH.resolve(languageCode + ".json");
         JsonObject customcontent = null;
 
@@ -63,18 +90,19 @@ public class NpcChat {
                 }
             }
         } catch (IOException e) {
-            CiviliansMod.LOGGER.error("Couldn't read default dialogue JSON", e);
+            CiviliansMod.LOGGER.error("Couldn't read dialogue JSON for language: {}", languageCode, e);
         }
 
         if (customcontent == null) {
-                Map<String, Map<NpcChat.ChatReason, List<String>>> fallback = DefaultChat.getDefaultChat();
-                Map<NpcChat.ChatReason, List<String>> englishFallback = fallback.getOrDefault("en_us", Collections.emptyMap());
-                for (ChatReason reason : ChatReason.values()) {
-                    List<String> list = new ArrayList<>(englishFallback.getOrDefault(reason, Collections.singletonList("...")));
-                    dialogues.put(reason, list);
-                }
-                return;
+            CiviliansMod.LOGGER.info("Using built-in default chat for language: {}", languageCode);
+            Map<String, Map<NpcChat.ChatReason, List<String>>> fallback = DefaultChat.getDefaultChat();
+            Map<NpcChat.ChatReason, List<String>> englishFallback = fallback.getOrDefault("en_us", Collections.emptyMap());
+            for (ChatReason reason : ChatReason.values()) {
+                List<String> list = new ArrayList<>(englishFallback.getOrDefault(reason, Collections.singletonList("...")));
+                dialogues.put(reason, list);
             }
+            return;
+        }
 
         // read jsons
         for (ChatReason reason : ChatReason.values()) {
@@ -91,8 +119,9 @@ public class NpcChat {
             if (reasons.isEmpty()) {
                 Map<String, Map<NpcChat.ChatReason, List<String>>> defaults = DefaultChat.getDefaultChat();
                 Map<NpcChat.ChatReason, List<String>> englishDefaults = defaults.getOrDefault("en_us", Collections.emptyMap());
-                reasons.addAll(englishDefaults.getOrDefault(reason, Collections.singletonList("...")));
-                CiviliansMod.LOGGER.warn("Missing JSON section for '{}', using defaults.", reason.getName());
+                List<String> fallbackChat = englishDefaults.getOrDefault(reason, Collections.singletonList("..."));
+                reasons.addAll(fallbackChat);
+                CiviliansMod.LOGGER.warn("Missing JSON section for '{}', using {} default dialogues.", reason.getName(), fallbackChat.size());
             }
 
             dialogues.put(reason, reasons);
