@@ -70,16 +70,16 @@ public class NPCEntity extends PathAwareEntity {
     @Environment(EnvType.CLIENT)
     public boolean dialoguesReceived;
 
-    public SkinManager getSkinManager() {
-        return skinManager;
-    }
     public NameManager getNameManager() {
         return nameManager;
     }
+    public SkinManager getSkinManager() {
+        return skinManager;
+    }
     public ChatManager getChatManager() { return chatManager; }
 
-    SkinManager skinManager = new SkinManager(this);
     NameManager nameManager = new NameManager(this);
+    SkinManager skinManager = new SkinManager(this);
     ChatManager chatManager = new ChatManager(this);
 
     @Override
@@ -312,6 +312,8 @@ public class NPCEntity extends PathAwareEntity {
 
     @Environment(EnvType.CLIENT)
     public void openCustomNPCScreen() {
+        String playerLang = CiviliansMod.playerLanguages.getOrDefault(MinecraftClient.getInstance().player.getUuid(), "en_us");
+        chatManager.getDialoguesForLanguage(playerLang); //load Map from Player
         if (skinManager.slim && skinManager.defaultSkin) {
             MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this));
         } else if (skinManager.defaultSkin) {
@@ -573,14 +575,49 @@ public class NPCEntity extends PathAwareEntity {
         public void markDialoguesDirty(UUID avoid) {
             if (!(npc.getWorld() instanceof ServerWorld serverWorld)) return;
 
-            for (ServerPlayerEntity player : serverWorld.getPlayers()) {
-                if (player.getUuid().equals(avoid)) continue;
+            for (ServerPlayerEntity player : serverWorld.getPlayers(p -> !p.getUuid().equals(avoid))) {
                 try {
                     ServerPlayNetworking.send(player, new DialogueSyncPayload(npc.getId(), dialogues));
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    CiviliansMod.LOGGER.error("[CiviliansMod] Failed to sync dialogues to player {}", player.getGameProfile().getName(), e);
                 }
             }
+        }
+
+        //TODO ADD Language entrys....
+        public void updateDialoguesForLanguage(String language, Map<NpcChat.ChatReason, List<String>> newDialogues) {
+            this.dialogues.put(language, new HashMap<>(newDialogues));
+            markDialoguesDirty(null); // Sync to all players
+        }
+
+        public void updateDialogueForLanguageAndReason(String language, NpcChat.ChatReason reason, List<String> messages) {
+            this.dialogues.computeIfAbsent(language, k -> new EnumMap<>(NpcChat.ChatReason.class))
+                    .put(reason, new ArrayList<>(messages));
+            markDialoguesDirty(null);
+        }
+
+        public void addLanguage(String language, Map<NpcChat.ChatReason, List<String>> dialogues) {
+            this.dialogues.put(language, new HashMap<>(dialogues));
+            markDialoguesDirty(null);
+        }
+
+        public void removeLanguage(String language) {
+            this.dialogues.remove(language);
+            markDialoguesDirty(null);
+        }
+
+        public Set<String> getAvailableLanguages() {
+            return dialogues.keySet();
+        }
+
+        public boolean hasLanguage(String language) {
+            return dialogues.containsKey(language) && !dialogues.get(language).isEmpty();
+        }
+
+        public void setLanguageMap(Map<String, Map<NpcChat.ChatReason, List<String>>> newLanguageMap) {
+            this.dialogues.clear();
+            this.dialogues.putAll(newLanguageMap);
+            markDialoguesDirty(null);
         }
 
         static @NotNull BiConsumer<String, Map<NpcChat.ChatReason, List<String>>> getManageCompoundSave(NbtCompound mainCompound) {
@@ -632,8 +669,11 @@ public class NPCEntity extends PathAwareEntity {
             } else {
                 this.slim = true;
             }
-
-            npcEntity.nameManager.setRandomName(this.slim);
+            if (npcEntity.nameManager != null) {
+                npcEntity.nameManager.setRandomName(this.slim);
+            } else {
+                CiviliansMod.LOGGER.warn("[CiviliansMod] nameManager is null in SkinManager constructor");
+            }
         }
 
         public boolean isSlim() {
