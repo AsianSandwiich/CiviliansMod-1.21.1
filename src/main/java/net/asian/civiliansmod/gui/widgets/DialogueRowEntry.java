@@ -13,18 +13,17 @@ import java.util.List;
 
 public class DialogueRowEntry extends ElementListWidget.Entry<DialogueRowEntry> {
     List<AbstractDialogueEntry> dialogueEntryList = new ArrayList<>();
+    boolean customMode;
 
-    public DialogueRowEntry(NPCEntity npc, NpcChat.ChatReason chatReason, List<String> strings, int base, CustomChatScreen screen) {
-        int i = 0;
-        strings.forEach(s -> {
-            dialogueEntryList.add(new DialogueEntry( npc,0, 0, 112, 12, chatReason, screen, s, base + i));
-        });
-
-        if (strings.isEmpty()) {
-            dialogueEntryList.add(new AddDialogueEntry(npc,0, 0, 112, 12, chatReason, screen));
+    public DialogueRowEntry(NPCEntity npc, NpcChat.ChatReason chatReason, List<String> strings, int base, CustomChatScreen screen, boolean customMode) {
+        this.customMode = customMode;
+        for (int i = 0; i < strings.size(); i++) {
+            String s = strings.get(i);
+            dialogueEntryList.add(new DialogueEntry( npc,0, 0, 112, 12, chatReason, screen, s, base + i, customMode));
         }
-        if (strings.size() == 1) {
-            dialogueEntryList.add(new AddDialogueEntry(npc,0, 0, 112, 12, chatReason, screen));
+
+        if (strings.isEmpty() || strings.size() == 1) {
+            dialogueEntryList.add(new AddDialogueEntry(npc,0, 0, 112, 12, chatReason, screen, customMode));
         }
     }
 

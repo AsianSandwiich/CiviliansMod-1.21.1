@@ -19,17 +19,18 @@ public class DialogueEntry extends AbstractDialogueEntry {
     DeleteWidget deleteWidget;
     String dialogue;
     int index;
+    boolean customMode;
 
-    protected DialogueEntry(NPCEntity npc, int x, int y, int width, int height, NpcChat.ChatReason chatReason, CustomChatScreen screen, String dialogue, int index) {
+    protected DialogueEntry(NPCEntity npc, int x, int y, int width, int height, NpcChat.ChatReason chatReason, CustomChatScreen screen, String dialogue, int index, boolean customMode) {
         super(x, y, width, height, chatReason, button -> {
-            EditDialogueScreen editScreen = new EditDialogueScreen(npc, dialogue, chatReason, index, screen);
+            EditDialogueScreen editScreen = new EditDialogueScreen(npc, dialogue, chatReason, index, screen, customMode);
             MinecraftClient.getInstance().setScreen(editScreen);
         });
         deleteWidget = new DeleteWidget(x + 40, y, 10, 10, button -> {
             ConfirmScreen confirmScreen = new ConfirmScreen(screen, button1 -> {
                 String language = MinecraftClient.getInstance().getLanguageManager().getLanguage();
                 npc.getChatManager().getTranslatedDialogues(language).computeIfAbsent(chatReason, (o) -> new ArrayList<>()).remove(dialogue);
-                RemoveDialoguePayload payload = new RemoveDialoguePayload(npc.getUuid(), language, chatReason.toString(), dialogue);
+                RemoveDialoguePayload payload = new RemoveDialoguePayload(npc.getUuid(), language, chatReason.toString(), dialogue, customMode);
                 ClientPlayNetworking.send(payload);
                 screen.fullInit();
                 MinecraftClient.getInstance().setScreen(screen);
