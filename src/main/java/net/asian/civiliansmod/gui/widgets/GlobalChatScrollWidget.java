@@ -1,12 +1,15 @@
 package net.asian.civiliansmod.gui.widgets;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.asian.civiliansmod.chat.NpcChat;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.CustomChatScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ElementListWidget;
 import net.minecraft.util.math.MathHelper;
+
+import java.util.ArrayList;
 
 public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScrollContainer> {
     NPCEntity npc;
@@ -40,10 +43,17 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
                 : npc.getChatManager().getTranslatedDialogues(language);
 
         dialoguesMap.forEach((chatReason, strings) -> {
-            if (strings != null && !strings.isEmpty()) {
-                this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen, customMode));
-            }
+            // add allways
+            if (strings == null) strings = new ArrayList<>();
+            this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen, customMode));
         });
+
+        // add placeholder
+        if (dialoguesMap.isEmpty() && customMode) {
+            for (NpcChat.ChatReason reason : NpcChat.ChatReason.values()) {
+                this.children().add(new ChatReasonEntryScrollContainer(npc, reason, new ArrayList<>(), screen, true));
+            }
+        }
     }
 
     @Override
