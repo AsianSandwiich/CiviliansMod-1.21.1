@@ -11,11 +11,13 @@ import net.minecraft.util.math.MathHelper;
 public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScrollContainer> {
     NPCEntity npc;
     CustomChatScreen screen;
+    boolean customMode;
 
-    public GlobalChatScrollWidget(NPCEntity npc, MinecraftClient minecraftClient, int width, int height, int x, int y, int itemHeight, CustomChatScreen screen) {
+    public GlobalChatScrollWidget(NPCEntity npc, MinecraftClient minecraftClient, int width, int height, int x, int y, int itemHeight, CustomChatScreen screen, boolean customMode) {
         super(minecraftClient, width, height, y, itemHeight);
         this.npc = npc;
         this.screen = screen;
+        this.customMode = customMode;
         this.setRenderHeader(false, 0);
         npc.getChatHandler().getTranslatedDialogues(minecraftClient.getLanguageManager().getLanguage()).forEach((chatReason, strings) -> {
             this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen));
@@ -25,16 +27,24 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
         refreshChildren();
     }
 
+    public boolean isCustomMode() {
+        return customMode;
+    }
+
     public void refreshChildren() {
         this.children().clear();
-        npc.getChatManager().getTranslatedDialogues(MinecraftClient.getInstance().getLanguageManager().getLanguage())
-                .forEach((chatReason, strings) -> {
-                    // Debug log: System.out.println("[CiviliansMod] Loading " + (strings != null ? strings.size() : 0) + " entries for reason: " + chatReason);
-                    if (strings != null && !strings.isEmpty()) {
-                        this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen));
-                    }
-                });
-        }
+        String language = MinecraftClient.getInstance().getLanguageManager().getLanguage();
+
+        var dialoguesMap = customMode
+                ? npc.getChatManager().getCustomDialogues()
+                : npc.getChatManager().getTranslatedDialogues(language);
+
+        dialoguesMap.forEach((chatReason, strings) -> {
+            if (strings != null && !strings.isEmpty()) {
+                this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen, customMode));
+            }
+        });
+    }
 
     @Override
     public int getRowLeft() {
