@@ -47,4 +47,13 @@ public class DialogueRowEntry extends ElementListWidget.Entry<DialogueRowEntry> 
             i += 117;
         }
     }
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        for (AbstractDialogueEntry entry : dialogueEntryList) {
+            if (entry.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
