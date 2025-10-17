@@ -10,6 +10,9 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class EditDialogueScreen extends AbstractDialogueEditionScreen {
     int index;
@@ -26,13 +29,21 @@ public class EditDialogueScreen extends AbstractDialogueEditionScreen {
         super.init();
         TextButtonWidget saveButton = new TextButtonWidget(x + 6, y + 30, 60, 15, Text.translatable("civilians.gui.save"), button -> {
             String language = MinecraftClient.getInstance().getLanguageManager().getLanguage();
-            npc.getChatManager().getTranslatedDialogues(language).computeIfAbsent(reason, (o) -> new ArrayList<>()).set(index, this.textFieldWidget.getText());
+            Map<NpcChat.ChatReason, List<String>> langMap = npc.getChatManager().getTranslatedDialogues(language);
+            for (NpcChat.ChatReason r : NpcChat.ChatReason.values()) {
+                langMap.computeIfAbsent(r, o -> new ArrayList<>(Collections.singletonList("...")));
+            }
+            List<String> list = langMap.get(reason);
+            while (list.size() <= index) {
+                list.add("..."); // Default-Platzhalter
+            }
+
+            list.set(index, this.textFieldWidget.getText());
             parent.fullInit();
             EditDialoguePayload payload = new EditDialoguePayload(npc.getUuid(), language, reason.toString(), index, this.textFieldWidget.getText());
             ClientPlayNetworking.send(payload);
             MinecraftClient.getInstance().setScreen(parent);
         }, 0xFFFFFF, 0xFF00FF00);
-
         addDrawableChild(saveButton);
     }
 
