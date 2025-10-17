@@ -107,8 +107,7 @@ public class CustomChatScreen extends AbstractConfigScreen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (chatScrollWidget.mouseClicked(mouseX, mouseY, button)) {
-            chatScrollWidget.onClick(mouseX, mouseY);
+        if (chatScrollWidget != null && chatScrollWidget.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
