@@ -24,4 +24,13 @@ public class AddDialogueEntry extends AbstractDialogueEntry {
         super.render(context, x, y, mouseX, mouseY, hovered, delta);
         context.drawTexture(TEXTURE, x + width / 2 - 4, y + 2, 0, 0, 8, 8, 8, 8);
     }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.isMouseOver(mouseX, mouseY)) {
+            this.onPress.onPress(this);
+            return true;
+        }
+        return false;
+    }
 }
