@@ -494,30 +494,45 @@ public class NPCEntity extends PathAwareEntity {
             Map<NpcChat.ChatReason, List<String>> langDialogues = dialogues.getOrDefault(
                     language, dialogues.getOrDefault("en_us", DefaultChat.getDefaultChat().get("en_us"))
             );
+            if (langDialogues == null) {
+                langDialogues = new EnumMap<>(NpcChat.ChatReason.class);
+            }
+
             List<String> messages = langDialogues.getOrDefault(reason, Collections.singletonList("..."));
+            if (messages == null || messages.isEmpty()) {
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues found for reason {} in language {}, using placeholder", reason.getName(), language);
+                messages = new ArrayList<>();
+                messages.add("..."); // default-placeholder
+                langDialogues.put(reason, messages);
+            }
             return messages.get(Random.create().nextInt(messages.size()));
         }
 
         public Map<NpcChat.ChatReason, List<String>> getDialoguesForLanguage(String language) {
             Map<NpcChat.ChatReason, List<String>> languageMap = dialogues.get(language);
-            // fallback
+            // fallback if no lang
             if (languageMap == null || languageMap.isEmpty()) {
-                CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues for language {}, falling back to en_us", language, npc.getId());
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues for language {}, falling back to en_us (NPC ID: {})", language, npc.getId());
                 languageMap = DefaultChat.getDefaultChat().get("en_us");
             }
-            //fallback if en_us is not available on error
+            //fallback if en_us is not available on error, use first other language
             if (languageMap == null && !dialogues.isEmpty()) {
                 languageMap = dialogues.values().iterator().next();
                 CiviliansMod.LOGGER.warn("[CiviliansMod] No en_us dialogues, using first available language for NPC {}", npc.getId());
             }
             //fallback if nothing works to DefaultChat
             if (languageMap == null) {
-                CiviliansMod.LOGGER.warn("[CiviliansMod] DefaultChat is empty for en_us dialogues, using first available language for NPC {}", npc.getId());
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues available at all, creating default placeholder map for NPC {}", npc.getId());
                 languageMap = new EnumMap<>(NpcChat.ChatReason.class);
+            }
+            // get allways a placeholder list for reasons
+            for (NpcChat.ChatReason reason : NpcChat.ChatReason.values()) {
+                languageMap.computeIfAbsent(reason, r -> new ArrayList<>(Collections.singletonList("...")));
             }
 
             return languageMap != null ? languageMap : new EnumMap<>(NpcChat.ChatReason.class);
         }
+
         public Map<NpcChat.ChatReason, List<String>> getTranslatedDialogues(String language) {
             return getDialoguesForLanguage(language);
         }
@@ -637,7 +652,6 @@ public class NPCEntity extends PathAwareEntity {
             };
         }
     }
-
 
     public static class SkinManager {
         byte[] skinByteArray;
