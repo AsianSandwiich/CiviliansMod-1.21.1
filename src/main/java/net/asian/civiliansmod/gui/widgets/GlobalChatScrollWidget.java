@@ -129,23 +129,15 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
     }
 
     @Override
-    public void onClick(double mouseX, double mouseY) {
-        this.children().forEach(dialogueEntryScrollContainer -> {
-            if (dialogueEntryScrollContainer.onClick(mouseX, mouseY)) {
-                return;
-            }
-            dialogueEntryScrollContainer.entries.forEach(entry -> {
-                entry.dialogueEntryList.forEach(dialogueEntry -> {
-                    dialogueEntry.onClick(mouseX, mouseY);
-                });
-            });
-        });
-    }
-
-    @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (!this.isMouseOver(mouseX, mouseY)) return false;
-        this.onClick(mouseX, mouseY);
-        return true;
+
+        for (ChatReasonEntryScrollContainer container : this.children()) {
+            if (container.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
