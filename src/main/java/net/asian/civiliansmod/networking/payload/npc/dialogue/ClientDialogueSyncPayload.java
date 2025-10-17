@@ -13,7 +13,7 @@ import net.minecraft.util.Uuids;
 import java.util.UUID;
 
 public record ClientDialogueSyncPayload(UUID npcUuid) implements CustomPayload {
-    public static final Id<ClientDialogueSyncPayload> ID = new Id<>(Identifier.of(CiviliansMod.MOD_ID, "dialogue_sync"));
+    public static final Id<ClientDialogueSyncPayload> ID = new Id<>(Identifier.of(CiviliansMod.MOD_ID, "dialogue_sync_request"));
 
     public static final PacketCodec<RegistryByteBuf, ClientDialogueSyncPayload> CODEC = PacketCodec.tuple(
             Uuids.PACKET_CODEC, ClientDialogueSyncPayload::npcUuid,
@@ -33,10 +33,11 @@ public record ClientDialogueSyncPayload(UUID npcUuid) implements CustomPayload {
                     context.player(),
                     new DialogueSyncPayload(
                             entity.getId(),
-                            entity.getChatManager().getDialogues()
+                            entity.getChatManager().getDialogues(),
+                            entity.getChatManager().getCustomDialogues()
                     ));
         } catch (Exception e) {
-            e.printStackTrace();
+            CiviliansMod.LOGGER.error("[CiviliansMod] Failed sending DialogueSyncPayload for NPC {}", this.npcUuid, e);
         }
     }
 }

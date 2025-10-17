@@ -14,10 +14,11 @@ import net.minecraft.util.Uuids;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 public record RemoveDialoguePayload(UUID npcUuid, String language, String chatReason,
-                                    String dialogue) implements CustomPayload {
+                                    String dialogue, boolean customMode) implements CustomPayload {
     public static final CustomPayload.Id<RemoveDialoguePayload> ID = new CustomPayload.Id<>(Identifier.of(CiviliansMod.MOD_ID, "npc_dialogue_remove"));
 
     public static final PacketCodec<RegistryByteBuf, RemoveDialoguePayload> CODEC = PacketCodec.tuple(
@@ -25,6 +26,7 @@ public record RemoveDialoguePayload(UUID npcUuid, String language, String chatRe
             PacketCodecs.STRING, RemoveDialoguePayload::language,
             PacketCodecs.STRING, RemoveDialoguePayload::chatReason,
             PacketCodecs.STRING, RemoveDialoguePayload::dialogue,
+            PacketCodecs.BOOL, RemoveDialoguePayload::customMode,
             RemoveDialoguePayload::new
     );
 
@@ -36,7 +38,20 @@ public record RemoveDialoguePayload(UUID npcUuid, String language, String chatRe
     public void handlePacket(ServerPlayNetworking.Context context) {
         if (!(context.player().getWorld() instanceof ServerWorld world)) return;
         if (!(world.getEntity(this.npcUuid) instanceof NPCEntity entity)) return;
-        entity.getChatManager().getDialogues().computeIfAbsent(language, (i) -> new HashMap<>()).computeIfAbsent(NpcChat.ChatReason.valueOf(chatReason), (o) -> new ArrayList<>()).remove(dialogue);
-        entity.getChatManager().markDialoguesDirty(context.player().getUuid());
+
+        NpcChat.ChatReason reason = NpcChat.ChatReason.valueOf(chatReason);
+
+        if (customMode) {
+            List<String> list = entity.getChatManager()
+                    .getCustomDialogues()
+                    .get(reason);
+            if (list != null) list.remove(dialogue);
+        } else {
+            var langMap = entity.getChatManager().getDialogues().get(language);
+            if (langMap != null) {
+                List<String> list = langMap.get(reason);
+                if (list != null) list.remove(dialogue);
+            }
+        }        entity.getChatManager().markDialoguesDirty(context.player().getUuid());
     }
 }

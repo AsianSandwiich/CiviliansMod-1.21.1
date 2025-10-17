@@ -11,10 +11,11 @@ import net.minecraft.util.Identifier;
 
 public class AddDialogueEntry extends AbstractDialogueEntry {
     Identifier TEXTURE = Identifier.of(CiviliansMod.MOD_ID, "textures/gui/add_button.png");
+    boolean customMode;
 
-    protected AddDialogueEntry(NPCEntity npc, int x, int y, int width, int height, NpcChat.ChatReason chatReason, CustomChatScreen screen) {
+    protected AddDialogueEntry(NPCEntity npc, int x, int y, int width, int height, NpcChat.ChatReason chatReason, CustomChatScreen screen, boolean customMode) {
         super(x, y, width, height, chatReason, button -> {
-            MinecraftClient.getInstance().setScreen(new AddDialogueScreen(npc, "", chatReason, screen));
+            MinecraftClient.getInstance().setScreen(new AddDialogueScreen(npc, "", chatReason, screen, customMode));
         });
     }
 

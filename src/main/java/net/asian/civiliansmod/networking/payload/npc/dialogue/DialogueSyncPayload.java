@@ -35,10 +35,15 @@ public record DialogueSyncPayload(int npcId, String info) implements CustomPaylo
             DialogueSyncPayload::new
     );
 
-    public DialogueSyncPayload(int npcUuid, Map<String, Map<NpcChat.ChatReason, List<String>>> info) throws IOException {
+    public DialogueSyncPayload(int npcId,
+                               Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues,
+                               Map<NpcChat.ChatReason, List<String>> customDialogues) throws IOException {
         this(
-                npcUuid,
-                compress(new Gson().toJson(info))
+                npcId,
+                compress(new Gson().toJson(Map.of(
+                        "dialogues", dialogues,
+                        "custom", customDialogues
+                )))
         );
     }
 
@@ -49,12 +54,34 @@ public record DialogueSyncPayload(int npcId, String info) implements CustomPaylo
 
     public void handlePacket(ClientPlayNetworking.Context context) {
         if (!(context.player().getWorld() instanceof World world)) return;
-        if (!(world.getEntityById(this.npcId) instanceof NPCEntity entity)) {
-            return;
-        }
-        var type = new TypeToken<Map<String, Map<NpcChat.ChatReason, List<String>>>>() {}.getType();
+        if (!(world.getEntityById(this.npcId) instanceof NPCEntity entity)) return;
+
         try {
-            Map<String, Map<NpcChat.ChatReason, List<String>>> dialogueMap = new Gson().fromJson(decompress(info), type);
+            String json = decompress(info);
+            Gson gson = new Gson();
+
+            Map<String, Object> dialoguespack = gson.fromJson(json, new TypeToken<Map<String, Object>>() {}.getType());
+
+            Map<String, Map<NpcChat.ChatReason, List<String>>> dialogueMap = new HashMap<>();
+            Map<NpcChat.ChatReason, List<String>> customMap = new HashMap<>();
+
+
+            if (dialoguespack.containsKey("dialogues")) {
+                dialogueMap = gson.fromJson(gson.toJson(dialoguespack.get("dialogues")),
+                        new TypeToken<Map<String, Map<NpcChat.ChatReason, List<String>>>>() {}.getType()
+                );
+            }
+
+            if (dialoguespack.containsKey("custom")) {
+                customMap = gson.fromJson(gson.toJson(dialoguespack.get("custom")),
+                        new TypeToken<Map<NpcChat.ChatReason, List<String>>>() {}.getType()
+                );
+            }
+
+            if (customMap == null) {
+                customMap = new HashMap<>(); // safety fallback
+            }
+
             String clientLanguage = MinecraftClient.getInstance().getLanguageManager().getLanguage();
             Map<NpcChat.ChatReason, List<String>> dialoguesForLanguage = dialogueMap.get(clientLanguage);
 
@@ -74,8 +101,9 @@ public record DialogueSyncPayload(int npcId, String info) implements CustomPaylo
                 correctLanguage.put(clientLanguage, dialoguesForLanguage);
 
                 entity.getChatManager().setDialogues(correctLanguage);
+                entity.getChatManager().setCustomDialogues(customMap);
                 entity.dialoguesReceived = true;
-                CiviliansMod.LOGGER.info("[CiviliansMod] Set {} dialogues for NPC {}", dialoguesForLanguage.size(), npcId);
+                CiviliansMod.LOGGER.info("[CiviliansMod] Set {} dialogues and {} custom for NPC {}", dialoguesForLanguage.size(), customMap.size(), npcId);
             } else {
                 CiviliansMod.LOGGER.error("[CiviliansMod] No dialogues available for NPC {}", npcId);
             }
@@ -91,7 +119,7 @@ public record DialogueSyncPayload(int npcId, String info) implements CustomPaylo
                 });
             });
         } catch (Exception e) {
-            e.printStackTrace();
+            CiviliansMod.LOGGER.error("[CiviliansMod] Failed to handle DialogueSyncPayload for NPC {}", npcId, e);
         }
     }
 

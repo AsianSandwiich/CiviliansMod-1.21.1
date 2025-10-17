@@ -16,10 +16,12 @@ import java.util.Map;
 
 public class EditDialogueScreen extends AbstractDialogueEditionScreen {
     int index;
+    boolean customMode;
 
-    public EditDialogueScreen(NPCEntity npc, String text, NpcChat.ChatReason reason, int index, CustomChatScreen parent) {
+    public EditDialogueScreen(NPCEntity npc, String text, NpcChat.ChatReason reason, int index, CustomChatScreen parent, boolean customMode) {
         super(npc, text, reason, parent);
         this.index = index;
+        this.customMode = customMode;
     }
 
     @Override
@@ -29,18 +31,33 @@ public class EditDialogueScreen extends AbstractDialogueEditionScreen {
         super.init();
         TextButtonWidget saveButton = new TextButtonWidget(x + 6, y + 30, 60, 15, Text.translatable("civilians.gui.save"), button -> {
             String language = MinecraftClient.getInstance().getLanguageManager().getLanguage();
-            Map<NpcChat.ChatReason, List<String>> langMap = npc.getChatManager().getTranslatedDialogues(language);
-            for (NpcChat.ChatReason r : NpcChat.ChatReason.values()) {
-                langMap.computeIfAbsent(r, o -> new ArrayList<>(Collections.singletonList("...")));
-            }
-            List<String> list = langMap.get(reason);
-            while (list.size() <= index) {
-                list.add("..."); // Default-Platzhalter
-            }
 
-            list.set(index, this.textFieldWidget.getText());
+            String input = this.textFieldWidget.getText().trim();
+            if (input.isEmpty()) return;
+
+            if (customMode) {
+                // custom dialogues
+                List<String> list = npc.getChatManager()
+                        .getCustomDialogues()
+                        .computeIfAbsent(reason, r -> new ArrayList<>(Collections.singletonList("...")));
+                while (list.size() <= index) {
+                    list.add("...");
+                }
+                list.set(index, input);
+            } else {
+                // language dialogue
+                Map<NpcChat.ChatReason, List<String>> langMap = npc.getChatManager().getTranslatedDialogues(language);
+                for (NpcChat.ChatReason r : NpcChat.ChatReason.values()) {
+                    langMap.computeIfAbsent(r, o -> new ArrayList<>(Collections.singletonList("...")));
+                }
+                List<String> list = langMap.get(reason);
+                while (list.size() <= index) {
+                    list.add("...");
+                }
+                list.set(index, input);
+            }
             parent.fullInit();
-            EditDialoguePayload payload = new EditDialoguePayload(npc.getUuid(), language, reason.toString(), index, this.textFieldWidget.getText());
+            EditDialoguePayload payload = new EditDialoguePayload(npc.getUuid(), language, reason.toString(), index, input, customMode);
             ClientPlayNetworking.send(payload);
             MinecraftClient.getInstance().setScreen(parent);
         }, 0xFFFFFF, 0xFF00FF00);

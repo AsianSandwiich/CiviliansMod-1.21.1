@@ -4,6 +4,7 @@ import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.widgets.ChatReasonEntryScrollContainer;
 import net.asian.civiliansmod.gui.widgets.GlobalChatScrollWidget;
+import net.asian.civiliansmod.gui.widgets.TextButtonWidget;
 import net.asian.civiliansmod.util.DebugUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -19,7 +20,7 @@ public class CustomChatScreen extends AbstractConfigScreen {
 
     public CustomChatScreen(NPCEntity npc) {
         super(npc, Text.of("civilians.gui.chat_title"));
-        chatScrollWidget = new GlobalChatScrollWidget(npc, MinecraftClient.getInstance(), 236, 134, 0, 0, 10, this);
+        chatScrollWidget = new GlobalChatScrollWidget(npc, MinecraftClient.getInstance(), 236, 134, 0, 0, 10, this, false);
     }
 
     @Override
@@ -34,6 +35,15 @@ public class CustomChatScreen extends AbstractConfigScreen {
         this.addDrawableChild(chatScrollWidget);
 
         screenInitialized = true; //now it should be initialized
+        TextButtonWidget toggleButton = new TextButtonWidget(x + 130, y - 75, 80, 15,  Text.literal(chatScrollWidget.isCustomMode() ? "Default" : "Custom"), button -> {
+            boolean nextMode = !chatScrollWidget.isCustomMode();
+
+            this.remove(chatScrollWidget);
+            chatScrollWidget = new GlobalChatScrollWidget(npc, MinecraftClient.getInstance(), 236, 134, 0, 0, 10, this, nextMode);
+            this.addDrawableChild(chatScrollWidget);
+            button.setMessage(Text.literal(nextMode ? "Default" : "Custom"));
+        });
+        addDrawableChild(toggleButton);
     }
 
     public void fullInit() {

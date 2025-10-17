@@ -15,19 +15,20 @@ import java.util.List;
 
 public class ChatReasonEntryScrollContainer extends ElementListWidget.Entry<ChatReasonEntryScrollContainer> {
     List<DialogueRowEntry> entries = new ArrayList<>();
-
+    boolean customMode;
     boolean open = true;
     NpcChat.ChatReason chatReason;
 
     OpenWidget openWidget;
 
-    public ChatReasonEntryScrollContainer(NPCEntity npc, final NpcChat.ChatReason chatReason, List<String> strings, CustomChatScreen screen) {
+    public ChatReasonEntryScrollContainer(NPCEntity npc, final NpcChat.ChatReason chatReason, List<String> strings, CustomChatScreen screen, boolean customMode) {
         this.chatReason = chatReason;
+        this.customMode = customMode;
         for (int i = 0; i < strings.size(); i += 2) {
-            entries.add(new DialogueRowEntry(npc, chatReason, strings.subList(i, Math.min(i + 2, strings.size())), i, screen));
+            entries.add(new DialogueRowEntry(npc, chatReason, strings.subList(i, Math.min(i + 2, strings.size())), i, screen, customMode));
         }
         if (strings.size() % 2 == 0) {
-            entries.add(new DialogueRowEntry(npc, chatReason, new ArrayList<>(), strings.size(), screen));
+            entries.add(new DialogueRowEntry(npc, chatReason, new ArrayList<>(), strings.size(), screen, customMode));
         }
         openWidget = new OpenWidget(0, 0, 10, 10, this, button -> {
             open = !open;
