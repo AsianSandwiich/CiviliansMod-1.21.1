@@ -39,8 +39,8 @@ public class CustomChatScreen extends AbstractConfigScreen {
         //Add toggleButton
         int buttonWidth = 80;
         int buttonHeight = 15;
-        int buttonX = x + 50;
-        int buttonY = y + 80;
+        int buttonX = x - (buttonWidth / 2);
+        int buttonY = y + 85;
         TextButtonWidget toggleButton = new TextButtonWidget(buttonX, buttonY, buttonWidth, buttonHeight,  Text.literal(chatScrollWidget.isCustomMode() ? "Default" : "Custom"), button -> {
             boolean nextMode = !chatScrollWidget.isCustomMode();
             this.remove(chatScrollWidget);
@@ -95,8 +95,9 @@ public class CustomChatScreen extends AbstractConfigScreen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (chatScrollWidget.isMouseOver(mouseX, mouseY))
-            chatScrollWidget.onClick(mouseX, mouseY);
+        if (chatScrollWidget.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
         return super.mouseClicked(mouseX, mouseY, button);
     }
 

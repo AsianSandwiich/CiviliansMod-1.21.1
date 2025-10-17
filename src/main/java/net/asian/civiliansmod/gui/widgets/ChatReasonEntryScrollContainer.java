@@ -30,9 +30,12 @@ public class ChatReasonEntryScrollContainer extends ElementListWidget.Entry<Chat
         if (strings.size() % 2 == 0) {
             entries.add(new DialogueRowEntry(npc, chatReason, new ArrayList<>(), strings.size(), screen, customMode));
         }
+        if (customMode && strings.isEmpty()) {
+            entries.add(new DialogueRowEntry(npc, chatReason, new ArrayList<>(), 0, screen, true));
+        }
+
         openWidget = new OpenWidget(0, 0, 10, 10, this, button -> {
             open = !open;
-            screen.init();
         });
     }
 
