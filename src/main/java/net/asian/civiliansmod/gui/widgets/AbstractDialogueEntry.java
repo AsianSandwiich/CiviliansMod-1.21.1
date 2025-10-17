@@ -29,7 +29,7 @@ public class AbstractDialogueEntry extends ButtonWidget {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (this.isMouseOver(mouseX, mouseY)) {
+        if (this.active && this.visible && this.isMouseOver(mouseX, mouseY)) {
             this.onPress.onPress(this);
             return true;
         }
