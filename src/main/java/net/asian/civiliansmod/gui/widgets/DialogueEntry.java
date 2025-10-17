@@ -74,11 +74,15 @@ public class DialogueEntry extends AbstractDialogueEntry {
     }
 
     @Override
-    public void onClick(double mouseX, double mouseY) {
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (deleteWidget.isMouseOver(mouseX, mouseY)) {
-            deleteWidget.onClick(mouseX, mouseY);
-        } else if (this.isMouseOver(mouseX, mouseY)) {
-            this.onPress();
+            deleteWidget.mouseClicked(mouseX, mouseY, button);
+            return true;
         }
+        if (this.isMouseOver(mouseX, mouseY)) {
+            this.onPress.onPress(this);
+            return true;
+        }
+        return false;
     }
 }
