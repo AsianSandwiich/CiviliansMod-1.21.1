@@ -35,13 +35,29 @@ public class CustomChatScreen extends AbstractConfigScreen {
         this.addDrawableChild(chatScrollWidget);
 
         screenInitialized = true; //now it should be initialized
-        TextButtonWidget toggleButton = new TextButtonWidget(x + 130, y - 75, 80, 15,  Text.literal(chatScrollWidget.isCustomMode() ? "Default" : "Custom"), button -> {
-            boolean nextMode = !chatScrollWidget.isCustomMode();
 
+        //Add toggleButton
+        int buttonWidth = 80;
+        int buttonHeight = 15;
+        int buttonX = x + 50;
+        int buttonY = y + 80;
+        TextButtonWidget toggleButton = new TextButtonWidget(buttonX, buttonY, buttonWidth, buttonHeight,  Text.literal(chatScrollWidget.isCustomMode() ? "Default" : "Custom"), button -> {
+            boolean nextMode = !chatScrollWidget.isCustomMode();
             this.remove(chatScrollWidget);
+
             chatScrollWidget = new GlobalChatScrollWidget(npc, MinecraftClient.getInstance(), 236, 134, 0, 0, 10, this, nextMode);
+
+            int newX = width / 2 - 114;
+            int newY = height / 2 - 60;
+            chatScrollWidget.setX(newX);
+            chatScrollWidget.setY(newY);
+            chatScrollWidget.refreshChildren();
+            chatScrollWidget.refreshScroll();
+
             this.addDrawableChild(chatScrollWidget);
             button.setMessage(Text.literal(nextMode ? "Default" : "Custom"));
+
+            screenInitialized = true;
         });
         addDrawableChild(toggleButton);
     }
