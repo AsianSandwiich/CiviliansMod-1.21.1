@@ -10,6 +10,9 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class AddDialogueScreen extends AbstractDialogueEditionScreen {
 
@@ -24,7 +27,11 @@ public class AddDialogueScreen extends AbstractDialogueEditionScreen {
         super.init();
         TextButtonWidget addButton = new TextButtonWidget(x + 6, y + 30, 60, 15, Text.translatable("civilians.gui.add"), button -> {
             String language = MinecraftClient.getInstance().getLanguageManager().getLanguage();
-            npc.getChatManager().getTranslatedDialogues(language).computeIfAbsent(reason, (o) -> new ArrayList<>()).add(this.textFieldWidget.getText());
+            Map<NpcChat.ChatReason, List<String>> langMap = npc.getChatManager().getTranslatedDialogues(language);
+            for (NpcChat.ChatReason r : NpcChat.ChatReason.values()) {
+                langMap.computeIfAbsent(r, o -> new ArrayList<>(Collections.singletonList("...")));
+            }
+            langMap.get(reason).add(this.textFieldWidget.getText());
             parent.fullInit();
             AddDialoguePayload payload = new AddDialoguePayload(npc.getUuid(), reason.toString(), language, this.textFieldWidget.getText());
             ClientPlayNetworking.send(payload);
