@@ -161,7 +161,7 @@ public class NPCEntity extends PathAwareEntity {
         // Save the variant to NBT
         writeView.putBoolean("IsPaused", this.isPaused());
         writeView.putBoolean("IsFollowing", this.isFollowing());
-        writeView.put("dialogues", Dialogues.CODEC, chatManager.saveDialogues());
+        writeView.put("dialogues", Dialogues.CODEC, Dialogues.fromMap(chatManager.getDialogues()));
         this.skinManager.writeView(writeView);
     }
 
@@ -169,7 +169,6 @@ public class NPCEntity extends PathAwareEntity {
     protected void readCustomData(ReadView readView) {
         super.readCustomData(readView);
         this.setPaused(readView.getBoolean("IsPaused", false));
-
         this.setFollowing(readView.getBoolean("IsFollowing", false));
 
         this.chatManager.setFromReadView(readView);
@@ -639,24 +638,34 @@ public class NPCEntity extends PathAwareEntity {
                 dialogues.putAll(DefaultChat.getDefaultChat());
             }
         }
-        public void setFromReadView(ReadView readView) {
 
+        public void setFromReadView(ReadView readView) {
             Optional<Dialogues> dialoguesOptional = readView.read("dialogues", Dialogues.CODEC);
-            if (dialoguesOptional.isEmpty()) return;
+            if (dialoguesOptional.isEmpty()) {
+                // Fallback, falls nichts gespeichert war
+                if (dialogues.isEmpty()) dialogues.putAll(DefaultChat.getDefaultChat());
+                return;
+            }
+
+            Dialogues d = dialoguesOptional.get();
+            Map<String, Map<NpcChat.ChatReason, List<String>>> chats = new HashMap<>();
+            d.dialogues().forEach((lang, languageDialogue) -> {
+                Map<NpcChat.ChatReason, List<String>> perReason = new EnumMap<>(NpcChat.ChatReason.class);
+                languageDialogue.languageDialogue().forEach((reason, chatReasonDialogue) -> {
+                    perReason.put(reason, new ArrayList<>(chatReasonDialogue.sayings()));
+                });
+                chats.put(lang, perReason);
+            });
+
+            this.dialogues.clear();
+            this.dialogues.putAll(chats);
+
+            if (this.dialogues.isEmpty()) this.dialogues.putAll(DefaultChat.getDefaultChat());
+        }
+
         public Map<String, Map<NpcChat.ChatReason, List<String>>> getDialogues() {
             return dialogues;
         }
-
-            Dialogues dialogues = dialoguesOptional.get();
-            Map<String, Map<NpcChat.ChatReason, List<String>>> chats = new HashMap<>();
-            dialogues.dialogues.forEach((s, languageDialogue) -> {
-                Map<NpcChat.ChatReason, List<String>> chatReadonDialogues = new HashMap<>();
-                languageDialogue.languageDialogue.forEach((chatReason, chatReasonDialogue) -> {
-                    chatReadonDialogues.put(chatReason, chatReasonDialogue.sayings);
-                });
-                chats.put(s, chatReadonDialogues);
-            });
-            this.dialogues = chats;
 
         public void setDialogues(Map<String, Map<NpcChat.ChatReason, List<String>>> newDialogues) {
             dialogues.clear();
