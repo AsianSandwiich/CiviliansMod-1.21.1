@@ -49,7 +49,7 @@ public class NPCRenderer extends MobEntityRenderer<NPCEntity, NPCRenderState, NP
      */
     @Override
     protected void scale(NPCRenderState livingEntityRenderState, MatrixStack matrixStack) {
-        float scale = 0.945F; // Uniform scaling for consistency
+        float scale = 0.945F;
         matrixStack.scale(scale, scale, scale);
         super.scale(livingEntityRenderState, matrixStack);
     }

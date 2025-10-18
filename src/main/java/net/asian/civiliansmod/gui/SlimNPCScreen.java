@@ -12,7 +12,7 @@ import java.util.stream.IntStream;
 /**
  * Class to display slim npc models
  */
-public class SlimNPCScreen extends AbstratcNPCScreen {
+public class SlimNPCScreen extends AbstractNPCScreen {
     public SlimNPCScreen(NPCEntity npc) {
         super(npc);
     }

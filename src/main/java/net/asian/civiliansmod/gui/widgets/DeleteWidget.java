@@ -24,4 +24,13 @@ public class DeleteWidget extends ButtonWidget {
             context.drawTexture(RenderPipelines.GUI_TEXTURED, BUTTON, this.getX(), this.getY(), 0, 0,  this.width, this.height, this.width, this.height);
         }
     }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.isMouseOver(mouseX, mouseY)) {
+            this.onPress.onPress(this);
+            return true;
+        }
+        return false;
+    }
 }

@@ -44,4 +44,13 @@ public class OpenWidget extends ButtonWidget {
                 && mouseX < (double)(this.getX() + this.width) - 2
                 && mouseY < (double)(this.getY() + this.height) - 2;
     }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.isMouseOver(mouseX, mouseY)) {
+            this.onPress.onPress(this);
+            return true;
+        }
+        return false;
+    }
 }
