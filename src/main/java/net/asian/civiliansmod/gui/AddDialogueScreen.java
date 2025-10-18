@@ -10,11 +10,17 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class AddDialogueScreen extends AbstractDialogueEditionScreen {
 
-    public AddDialogueScreen(NPCEntity npc, String text, NpcChat.ChatReason reason, CustomChatScreen parent) {
+    private final boolean customMode;
+
+    public AddDialogueScreen(NPCEntity npc, String text, NpcChat.ChatReason reason, CustomChatScreen parent, boolean customMode) {
         super(npc, text, reason, parent);
+        this.customMode = customMode;
     }
 
     @Override
@@ -24,9 +30,24 @@ public class AddDialogueScreen extends AbstractDialogueEditionScreen {
         super.init();
         TextButtonWidget addButton = new TextButtonWidget(x + 6, y + 30, 60, 15, Text.translatable("civilians.gui.add"), button -> {
             String language = MinecraftClient.getInstance().getLanguageManager().getLanguage();
-            npc.getChatManager().getTranslatedDialogues(language).computeIfAbsent(reason, (o) -> new ArrayList<>()).add(this.textFieldWidget.getText());
+
+            String input = this.textFieldWidget.getText().trim();
+            if (input.isEmpty()) {
+                return; // no space in input
+            }
+
+            if (customMode) {
+                npc.getChatManager().getCustomDialogues().computeIfAbsent(reason, r -> new ArrayList<>()).add(input);
+            } else {
+                Map<NpcChat.ChatReason, List<String>> langMap = npc.getChatManager().getTranslatedDialogues(language);
+                for (NpcChat.ChatReason r : NpcChat.ChatReason.values()) {
+                    langMap.computeIfAbsent(r, o -> new ArrayList<>(Collections.singletonList("...")));
+                }
+                langMap.get(reason).add(input);
+            }
+
             parent.fullInit();
-            AddDialoguePayload payload = new AddDialoguePayload(npc.getUuid(), reason.toString(), language, this.textFieldWidget.getText());
+            AddDialoguePayload payload = new AddDialoguePayload(npc.getUuid(), reason.toString(), language, input, customMode);
             ClientPlayNetworking.send(payload);
             MinecraftClient.getInstance().setScreen(parent);
         }, 0xFFFFFF, 0xFF00FF00);
