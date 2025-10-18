@@ -9,14 +9,50 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ElementListWidget;
 import net.minecraft.util.math.MathHelper;
 
+import java.util.ArrayList;
+
 public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScrollContainer> {
-    public GlobalChatScrollWidget(NPCEntity npc, MinecraftClient minecraftClient, int width, int height, int x, int y, int itemHeight, CustomChatScreen screen) {
+    NPCEntity npc;
+    CustomChatScreen screen;
+    boolean customMode;
+
+    public GlobalChatScrollWidget(NPCEntity npc, MinecraftClient minecraftClient, int width, int height, int x, int y, int itemHeight, CustomChatScreen screen, boolean customMode) {
         super(minecraftClient, width, height, y, itemHeight);
+        this.npc = npc;
+        this.screen = screen;
+        this.customMode = customMode;
         npc.getChatManager().getTranslatedDialogues(minecraftClient.getLanguageManager().getLanguage()).forEach((chatReason, strings) -> {
-            this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen));
+            this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen, customMode));
         });
 
         this.setPosition(x, y);
+        refreshChildren();
+    }
+
+    public boolean isCustomMode() {
+        return customMode;
+    }
+
+    public void refreshChildren() {
+        this.children().clear();
+        String language = MinecraftClient.getInstance().getLanguageManager().getLanguage();
+
+        var dialoguesMap = customMode
+                ? npc.getChatManager().getCustomDialogues()
+                : npc.getChatManager().getTranslatedDialogues(language);
+
+        dialoguesMap.forEach((chatReason, strings) -> {
+            // add allways
+            if (strings == null) strings = new ArrayList<>();
+            this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen, customMode));
+        });
+
+        // add placeholder
+        if (dialoguesMap.isEmpty() && customMode) {
+            for (NpcChat.ChatReason reason : NpcChat.ChatReason.values()) {
+                this.children().add(new ChatReasonEntryScrollContainer(npc, reason, new ArrayList<>(), screen, true));
+            }
+        }
     }
 
     @Override
@@ -24,14 +60,12 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
         return this.getX();
     }
 
-    @Override
     public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         this.enableScissor(context);
         this.renderList(context, mouseX, mouseY, delta);
         context.disableScissor();
         renderScrollBar(context);
     }
-
 
     protected void renderScrollBar(DrawContext context) {
         if (this.visible) {
@@ -115,5 +149,18 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
                 });
             }
         });
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!this.isMouseOver(mouseX, mouseY)) return false;
+
+        for (ChatReasonEntryScrollContainer container : this.children()) {
+            if (container.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -72,18 +72,17 @@ public class NPCEntity extends PathAwareEntity {
     @Environment(EnvType.CLIENT)
     public boolean dialoguesReceived;
 
-    public NpcChatManager getChatManager() {
-        return chatManager;
+    public NameManager getNameManager() {
+        return nameManager;
     }
-
     public SkinManager getSkinManager() {
         return skinManager;
     }
+    public ChatManager getChatManager() { return chatManager; }
 
     NameManager nameManager = new NameManager(this);
-    NpcChatManager chatManager = new NpcChatManager(this);
     SkinManager skinManager = new SkinManager(this);
-
+    ChatManager chatManager = new ChatManager(this);
 
     @Override
     public void onSpawnPacket(EntitySpawnS2CPacket packet) {
@@ -120,13 +119,11 @@ public class NPCEntity extends PathAwareEntity {
         } else {
             this.dialoguesReceived = false;
         }
-
     }
-
 
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
-        this.chatManager = new NpcChatManager(this);
+        this.chatManager = new ChatManager(this);
         super.initDataTracker(builder);
         builder.add(IS_PAUSED, false);
         builder.add(IS_FOLLOWING, false);
@@ -237,6 +234,7 @@ public class NPCEntity extends PathAwareEntity {
 
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
+        CiviliansMod.LOGGER.info("[CiviliansMod] This is the NPC: {}", this.getId());
 
         // Ensure the interaction is in the main hand
         if (hand == Hand.MAIN_HAND) {
@@ -254,51 +252,55 @@ public class NPCEntity extends PathAwareEntity {
 
             // Check if the player is sneaking
             if (player.isSneaking()) {
-                if (player instanceof ServerPlayerEntity serverPlayer && !hasSentTo(player.getUuid())) {
-                    markSentTo(player.getUuid());
-                    OpenScreenDialoguesPayload openScreenDialoguesPayload = new OpenScreenDialoguesPayload(this.getId(), this.chatManager.getDialogues());
-                    ServerPlayNetworking.send(serverPlayer, openScreenDialoguesPayload);
-                }
-
                 if (!this.getWorld().isClient()) {
-                    // Initiate turning to face the player
+                    // SERVER-SIDE: Handle dialogue payload and NPC behavior
                     this.getNavigation().stop();
 
                     double dx = player.getX() - this.getX();
                     double dz = player.getZ() - this.getZ();
                     targetYaw = (float) (Math.atan2(dz, dx) * (180F / Math.PI)) - 90F;
                     isTurning = true;
-                    this.lookAtPlayerTicks = 170;
+                    this.lookAtPlayerTicks = 60;
+
+                    // Only send dialogue payload if not already sent
+                    if (player instanceof ServerPlayerEntity serverPlayer && !hasSentTo(player.getUuid())) {
+                        markSentTo(player.getUuid());
+                        OpenScreenDialoguesPayload openScreenDialoguesPayload = new OpenScreenDialoguesPayload(this.getId(), this.chatManager.getDialogues());
+                        ServerPlayNetworking.send(serverPlayer, openScreenDialoguesPayload);
+                        CiviliansMod.LOGGER.info("[CiviliansMod] Sent dialogues for NPC {}", this.getId());
+                    }
 
                     return ActionResult.SUCCESS;
                 } else {
+                    // CLIENT-SIDE: Only handle GUI opening when dialogues are received
+                    // Remove the chat message here - it doesn't belong in sneak interaction
                     if (this.dialoguesReceived) {
+                        CiviliansMod.LOGGER.info("[CiviliansMod] Opening GUI for NPC {}", this.getId());
                         openCustomNPCScreen();
+                    } else {
+                        CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues yet for NPC {}", this.getId());
                     }
-
+                    return ActionResult.SUCCESS;
                 }
-                return ActionResult.SUCCESS; // Indicate the interaction was handled
+            } else {
+                // NORMAL INTERACTION (not sneaking) - Send chat message
+                if (!this.getWorld().isClient()) {
+                    this.getNavigation().stop();
+
+                    double dx = player.getX() - this.getX();
+                    double dz = player.getZ() - this.getZ();
+                    targetYaw = (float) (Math.atan2(dz, dx) * (180F / Math.PI)) - 90F;
+                    isTurning = true;
+                    this.lookAtPlayerTicks = 60;
+
+                    Text nameText = this.getCustomName();
+                    String npcName = nameText != null ? nameText.getString() : "NPC";
+                    String dialogue = chatManager.getRandomChat(CiviliansMod.playerLanguages.get(player.getUuid()), NpcChat.ChatReason.INTERACT);
+                    player.sendMessage(Text.literal(npcName + ": " + dialogue), true);
+                }
+                return ActionResult.SUCCESS;
             }
-
-            // (Optional) Normal interaction behavior if not sneaking
-            if (!this.getWorld().isClient()) {
-                this.getNavigation().stop();
-
-                double dx = player.getX() - this.getX();
-                double dz = player.getZ() - this.getZ();
-                targetYaw = (float) (Math.atan2(dz, dx) * (180F / Math.PI)) - 90F;
-                isTurning = true;
-                this.lookAtPlayerTicks = 60;
-                Text nameText = this.getCustomName();
-                String npcName = nameText != null ? nameText.getString() : "NPC";
-
-
-                String dialogue = chatManager.getRandomChat(CiviliansMod.playerLanguages.get(player.getUuid()), NpcChat.ChatReason.INTERACT);
-                player.sendMessage(Text.literal(npcName + ": " + dialogue), true);
-            }
-            return ActionResult.SUCCESS;
         }
-
         // Delegate to superclass for other interactions
         return super.interactMob(player, hand);
     }
@@ -472,52 +474,110 @@ public class NPCEntity extends PathAwareEntity {
         sent.add(playerId);
     }
 
-    public static class NpcChatManager {
+    public static class ChatManager {
         NPCEntity npc;
-        Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues = DefaultChat.getDefaultChat();
+        Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues;
+        Map<NpcChat.ChatReason, List<String>> customDialogues = new EnumMap<>(NpcChat.ChatReason.class);
 
-        public NpcChatManager(NPCEntity npc) {
+        public ChatManager(NPCEntity npc) {
             this.npc = npc;
+            this.dialogues = new HashMap<>(DefaultChat.getDefaultChat());
         }
 
-        public String getRandomChat(String language, NpcChat.ChatReason chatReason) {
-            if (!dialogues.containsKey(language)) {
-                return "";
+        public String getRandomChat(String language, NpcChat.ChatReason reason) {
+            List<String> custom = customDialogues.get(reason);
+            if (custom != null && !custom.isEmpty()) {
+                return custom.get(Random.create().nextInt(custom.size()));
             }
 
-            if (!dialogues.get(language).containsKey(chatReason)) {
-                return "";
+            Map<NpcChat.ChatReason, List<String>> langDialogues = dialogues.get(language);
+            if (langDialogues == null || langDialogues.isEmpty()) {
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues for language {}, falling back to en_us (NPC ID: {})",language , npc.getId());
+                langDialogues = DefaultChat.getDefaultChat().get("en_us");
             }
 
-            List<String> chat = dialogues.get(language).get(chatReason);
-            if (chat.isEmpty()) {
-                return "";
+            if (langDialogues == null && !dialogues.isEmpty()) {
+                langDialogues = dialogues.values().iterator().next();
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No en_us dialogues, using first available language for NPC {}", npc.getId());
             }
 
-            return chat.get(Random.create().nextInt(chat.size()));
+            if (langDialogues == null) {
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues available at all, using placeholder for NPC {}", npc.getId());
+                langDialogues = new EnumMap<>(NpcChat.ChatReason.class);
+            }
+
+            if (dialogues.isEmpty()) {
+                CiviliansMod.LOGGER.error("[CiviliansMod] Dialogue map empty, loading default dialogues for NPC {}", npc.getId());
+                dialogues.putAll(DefaultChat.getDefaultChat());
+            }
+
+            List<String> messages = langDialogues.getOrDefault(reason, Collections.singletonList("..."));
+            if (messages.isEmpty()) {
+                messages = Collections.singletonList("...");
+            }
+            return messages.get(Random.create().nextInt(messages.size()));
         }
 
-        public Map<String, Map<NpcChat.ChatReason, List<String>>> getDialogues() {
-            return dialogues;
-        }
+        public Map<NpcChat.ChatReason, List<String>> getDialoguesForLanguage(String language) {
+            //map for language
+            Map<NpcChat.ChatReason, List<String>> languageMap = dialogues.get(language);
 
-        public void setDialogue(Map<String, Map<NpcChat.ChatReason, List<String>>> dialogue) {
-            this.dialogues = dialogue;
+            // fallback if no lang
+            if (languageMap == null || languageMap.isEmpty()) {
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues for language {}, falling back to en_us (NPC ID: {})", language, npc.getId());
+                languageMap = DefaultChat.getDefaultChat().get("en_us");
+            }
+            //fallback if en_us is not available on error, use first other language
+            if (languageMap == null && !dialogues.isEmpty()) {
+                languageMap = dialogues.values().iterator().next();
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No en_us dialogues, using first available language for NPC {}", npc.getId());
+            }
+            //fallback if nothing works to DefaultChat
+            if (languageMap == null) {
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues available at all, creating default placeholder map for NPC {}", npc.getId());
+                languageMap = new EnumMap<>(NpcChat.ChatReason.class);
+            }
+            // get allways a placeholder list for reasons
+            for (NpcChat.ChatReason reason : NpcChat.ChatReason.values()) {
+                languageMap.computeIfAbsent(reason, r -> new ArrayList<>(Collections.singletonList("...")));
+            }
+            return languageMap;
         }
 
         public Map<NpcChat.ChatReason, List<String>> getTranslatedDialogues(String language) {
-            if (!dialogues.containsKey(language)) {
-                return new LinkedHashMap<>();
-            }
-            return dialogues.get(language);
+            return getDialoguesForLanguage(language);
         }
 
-
         public NbtCompound saveDialogues() {
-            NbtCompound mainCompound = new NbtCompound();
-            dialogues.forEach(getManageCompoundSave(mainCompound));
+            NbtCompound main = new NbtCompound();
 
-            return mainCompound;
+            //save language dialogue
+            NbtCompound langs = new NbtCompound();
+            for (Map.Entry<String, Map<NpcChat.ChatReason, List<String>>> langEntry : dialogues.entrySet()) {
+                NbtCompound langCompound = new NbtCompound();
+                for (Map.Entry<NpcChat.ChatReason, List<String>> reasonEntry : langEntry.getValue().entrySet()) {
+                    NbtList list = new NbtList();
+                    for (String msg : reasonEntry.getValue()) {
+                        list.add(NbtString.of(msg));
+                    }
+                    langCompound.put(reasonEntry.getKey().getName(), list);
+                }
+                langs.put(langEntry.getKey(), langCompound);
+            }
+            main.put("Languages", langs);
+
+            //save custom dialogue
+            NbtCompound customCompound = new NbtCompound();
+            for (Map.Entry<NpcChat.ChatReason, List<String>> entry : customDialogues.entrySet()) {
+                NbtList list = new NbtList();
+                for (String msg : entry.getValue()) {
+                    list.add(NbtString.of(msg));
+                }
+                customCompound.put(entry.getKey().getName(), list);
+            }
+            main.put("CustomDialogues", customCompound);
+
+            return main;
         }
 
         public void setFromNbt(Optional<NbtCompound> nbtOptional) {
@@ -525,56 +585,89 @@ public class NPCEntity extends PathAwareEntity {
                 return;
             }
 
+            dialogues.clear();
+            customDialogues.clear();
+
             NbtCompound nbt = nbtOptional.get();
-            Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues = new HashMap<>();
+            Optional<NbtCompound> langsOpt = nbt.getCompound("Languages");
+            if (langsOpt.isPresent()) {
+                NbtCompound langs = langsOpt.get();
 
-            for (String language : nbt.getKeys()) {
-                Optional<NbtCompound> languageCompoundOpt = nbt.getCompound(language);
-                if (!languageCompoundOpt.isPresent()) continue;
+                for (String language : langs.getKeys()) {
+                    Optional<NbtCompound> langCompoundOpt = langs.getCompound(language);
+                    if (langCompoundOpt.isEmpty()) continue;
+                    NbtCompound langCompound = langCompoundOpt.get();
+                    Map<NpcChat.ChatReason, List<String>> reasonMap = new EnumMap<>(NpcChat.ChatReason.class);
 
-                NbtCompound languageCompound = languageCompoundOpt.get();
-                Map<NpcChat.ChatReason, List<String>> reasonToMessages = new HashMap<>();
-
-                for (String reasonName : languageCompound.getKeys()) {
-                    try {
-                        NpcChat.ChatReason reason = NpcChat.ChatReason.fromName(reasonName);
-                        Optional<NbtList> optionalList = languageCompound.getList(reasonName);
-                        if (optionalList.isPresent()) {
-                            NbtList messageList = optionalList.get();
+                    for (NpcChat.ChatReason reason : NpcChat.ChatReason.values()) {
+                        if (langCompound.contains(reason.getName())) {
+                            Optional<NbtList> listOpt = langCompound.getList(reason.getName());
+                            if (listOpt.isEmpty()) continue;
+                            NbtList list = listOpt.get();
                             List<String> messages = new ArrayList<>();
+                            list.forEach(e -> messages.add(e.asString().orElse("")));
 
-                            for (NbtElement element : messageList) {
-                                messages.add(element.asString().orElse(""));
-                            }
-
-                            reasonToMessages.put(reason, messages);
+                            reasonMap.put(reason, messages);
                         }
-                    } catch (Exception e) {
-                        CiviliansMod.LOGGER.error("Unexpected reason: {}", reasonName, e);
                     }
-                }
 
-                dialogues.put(language, reasonToMessages);
+                    dialogues.put(language, reasonMap);
+                }
             }
 
-            this.dialogues = dialogues;
+
+            Optional<NbtCompound> customOpt = nbt.getCompound("CustomDialogues");
+            if (customOpt.isPresent()) {
+                NbtCompound custom = customOpt.get();
+
+
+                for (NpcChat.ChatReason reason : NpcChat.ChatReason.values()) {
+                    if (custom.contains(reason.getName())) {
+                        Optional<NbtList> listOpt = custom.getList(reason.getName());
+                        if (listOpt.isEmpty()) continue;
+
+                        NbtList list = listOpt.get();
+                        List<String> messages = new ArrayList<>();
+                        list.forEach(e -> messages.add(e.asString().orElse("")));
+                        customDialogues.put(reason, messages);
+                    }
+                }
+            }
+
+            if (dialogues.isEmpty()) {
+                dialogues.putAll(DefaultChat.getDefaultChat());
+            }
         }
 
+        public Map<String, Map<NpcChat.ChatReason, List<String>>> getDialogues() {
+            return dialogues;
+        }
 
+        public void setDialogues(Map<String, Map<NpcChat.ChatReason, List<String>>> newDialogues) {
+            dialogues.clear();
+            dialogues.putAll(newDialogues);
+        }
+
+        public Map<NpcChat.ChatReason, List<String>> getCustomDialogues() {
+            return customDialogues;
+        }
+
+        public void setCustomDialogues(Map<NpcChat.ChatReason, List<String>> map) {
+            customDialogues.clear();
+            customDialogues.putAll(map);
+        }
 
         public void markDialoguesDirty(UUID avoid) {
-            if (npc.getWorld() instanceof ServerWorld serverWorld) {
-                for (ServerPlayerEntity player : serverWorld.getPlayers()) {
-                    if (player.getUuid().equals(avoid)) continue;
-                    try {
-                        ServerPlayNetworking.send(player, new DialogueSyncPayload(npc.getId(), dialogues));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+            if (!(npc.getWorld() instanceof ServerWorld serverWorld)) return;
+
+            for (ServerPlayerEntity player : serverWorld.getPlayers(p -> !p.getUuid().equals(avoid))) {
+                try {
+                    ServerPlayNetworking.send(player, new DialogueSyncPayload(npc.getId(), dialogues, customDialogues));
+                } catch (IOException e) {
+                    CiviliansMod.LOGGER.error("[CiviliansMod] Failed to sync dialogues to player {}", player.getGameProfile().getName(), e);
                 }
             }
         }
-
 
         static @NotNull BiConsumer<String, Map<NpcChat.ChatReason, List<String>>> getManageCompoundSave(NbtCompound mainCompound) {
             return (language, reasonToMessagesMap) -> {
@@ -593,7 +686,6 @@ public class NPCEntity extends PathAwareEntity {
             };
         }
     }
-
 
     public static class SkinManager {
         byte[] skinByteArray;
@@ -616,9 +708,16 @@ public class NPCEntity extends PathAwareEntity {
             this.npcEntity = npcEntity;
             this.defaultSkin = true;
             this.baseVariant = npcEntity.random.nextInt(88);
-            this.slim = baseVariant > 43;
-
-            npcEntity.nameManager.setRandomName(this.slim);
+            if (baseVariant <= 43) {
+                this.slim = false;
+            } else {
+                this.slim = true;
+            }
+            if (npcEntity.nameManager != null) {
+                npcEntity.nameManager.setRandomName(this.slim);
+            } else {
+                CiviliansMod.LOGGER.warn("[CiviliansMod] nameManager is null in SkinManager constructor");
+            }
         }
 
         public boolean isSlim() {
@@ -670,8 +769,6 @@ public class NPCEntity extends PathAwareEntity {
                 }
             }
         }
-
-
 
         public void setSlim(boolean slim) {
             this.slim = slim;

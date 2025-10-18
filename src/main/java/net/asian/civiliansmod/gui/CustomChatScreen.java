@@ -1,8 +1,10 @@
 package net.asian.civiliansmod.gui;
 
+import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.widgets.ChatReasonEntryScrollContainer;
 import net.asian.civiliansmod.gui.widgets.GlobalChatScrollWidget;
+import net.asian.civiliansmod.gui.widgets.TextButtonWidget;
 import net.asian.civiliansmod.util.DebugUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -15,43 +17,67 @@ import java.util.List;
 
 public class CustomChatScreen extends AbstractConfigScreen {
     GlobalChatScrollWidget chatScrollWidget;
+    private boolean screenInitialized = false; // screen is initialized? true if yes
 
     public CustomChatScreen(NPCEntity npc) {
         super(npc, Text.of("civilians.gui.chat_title"));
-        chatScrollWidget = new GlobalChatScrollWidget(npc, MinecraftClient.getInstance(), 236, 134, 0, 0, 10, this);
+        chatScrollWidget = new GlobalChatScrollWidget(npc, MinecraftClient.getInstance(), 236, 134, 0, 0, 10, this, false);
     }
-
 
     @Override
     public void init() {
+        super.init();
         int x = width / 2;
         int y = height / 2;
-        super.init();
+
         chatScrollWidget.setX(x - 114);
         chatScrollWidget.setY(y - 60);
+        chatScrollWidget.refreshChildren();
         this.addDrawableChild(chatScrollWidget);
+
+        screenInitialized = true; //now it should be initialized
+
+        //Add toggleButton
+        int buttonWidth = 80;
+        int buttonHeight = 15;
+        int buttonX = x - (buttonWidth / 2);
+        int buttonY = y + 85;
+        TextButtonWidget toggleButton = new TextButtonWidget(buttonX, buttonY, buttonWidth, buttonHeight,  Text.literal(chatScrollWidget.isCustomMode() ? "Default" : "Custom"), button -> {
+            boolean nextMode = !chatScrollWidget.isCustomMode();
+            this.remove(chatScrollWidget);
+
+            chatScrollWidget = new GlobalChatScrollWidget(npc, MinecraftClient.getInstance(), 236, 134, 0, 0, 10, this, nextMode);
+
+            int newX = width / 2 - 114;
+            int newY = height / 2 - 60;
+            chatScrollWidget.setX(newX);
+            chatScrollWidget.setY(newY);
+            chatScrollWidget.refreshChildren();
+            chatScrollWidget.refreshScroll();
+
+            this.addDrawableChild(chatScrollWidget);
+            button.setMessage(Text.literal(nextMode ? "Default" : "Custom"));
+
+            screenInitialized = true;
+        });
+        addDrawableChild(toggleButton);
     }
 
     public void fullInit() {
-        int x = width / 2;
-        int y = height / 2;
         List<Boolean> openList = new ArrayList<>();
         double offsetY = chatScrollWidget.getScrollY();
         chatScrollWidget.children().forEach(chatReasonEntryScrollContainer -> {
             openList.add(chatReasonEntryScrollContainer.getOpen());
         });
 
-        chatScrollWidget = new GlobalChatScrollWidget(npc, MinecraftClient.getInstance(), 236, 134, x - 114, y - 60, 10, this);
+        chatScrollWidget.children().forEach(container -> openList.add(container.getOpen()));
+        chatScrollWidget.refreshChildren();
         chatScrollWidget.setScrollY(Math.min(offsetY, chatScrollWidget.getMaxScrollY()));
         chatScrollWidget.refreshScroll();
 
-        for(int i = 0; i<chatScrollWidget.children().size(); i++ ) {
-            ChatReasonEntryScrollContainer container = chatScrollWidget.children().get(i);
-            boolean open = openList.get(i);
-            container.setOpen(open);
+        for (int i = 0; i < chatScrollWidget.children().size() && i < openList.size(); i++) {
+            chatScrollWidget.children().get(i).setOpen(openList.get(i));
         }
-        this.addDrawableChild(chatScrollWidget);
-        super.init();
     }
 
     @Override
@@ -63,6 +89,9 @@ public class CustomChatScreen extends AbstractConfigScreen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
+        if (chatScrollWidget != null && screenInitialized) {
+            chatScrollWidget.renderWidget(context, mouseX, mouseY, delta);
+        }
     }
 
     @Override
@@ -76,8 +105,16 @@ public class CustomChatScreen extends AbstractConfigScreen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (chatScrollWidget.isMouseOver(mouseX, mouseY))
-            chatScrollWidget.onClick(mouseX, mouseY);
+        if (chatScrollWidget != null && chatScrollWidget.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    //after close reset the screen is initialized
+    @Override
+    public void close() {
+        screenInitialized = false;
+        super.close();
     }
 }
