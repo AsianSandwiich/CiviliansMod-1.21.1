@@ -35,10 +35,11 @@ public record ClientDialogueSyncPayload(UUID npcUuid) implements CustomPayload {
                     context.player(),
                     new DialogueSyncPayload(
                             entity.getId(),
-                            entity.getChatManager().getDialogues()
+                            entity.getChatManager().getDialogues(),
+                            entity.getChatManager().getCustomDialogues()
                     ));
         } catch (Exception e) {
-            e.printStackTrace();
+            CiviliansMod.LOGGER.error("[CiviliansMod] Failed sending DialogueSyncPayload for NPC {}", this.npcUuid, e);
         }
     }
 }

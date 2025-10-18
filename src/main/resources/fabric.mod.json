@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "${mod_id}",
-  "name": "${mod_name}",
-  "version": "${version}",
-  "description": "${mod_description}",
+  "id": "civiliansmod",
+  "name": "Civilians Mod",
+  "version": "1.4",
+  "description": "A client and server side Minecraft mod introducing civilians.",
   "icon": "assets/civiliansmod/icon.png",
   "authors": [
     "AsianSandwiich"
