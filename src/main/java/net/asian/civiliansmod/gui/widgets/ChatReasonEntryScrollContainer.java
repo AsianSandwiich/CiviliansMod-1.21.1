@@ -15,24 +15,26 @@ import java.util.List;
 
 public class ChatReasonEntryScrollContainer extends ElementListWidget.Entry<ChatReasonEntryScrollContainer> {
     List<DialogueRowEntry> entries = new ArrayList<>();
-
+    boolean customMode;
     boolean open = true;
     NpcChat.ChatReason chatReason;
 
     OpenWidget openWidget;
 
-    public ChatReasonEntryScrollContainer(NPCEntity npc, final NpcChat.ChatReason chatReason, List<String> strings, CustomChatScreen screen) {
+    public ChatReasonEntryScrollContainer(NPCEntity npc, final NpcChat.ChatReason chatReason, List<String> strings, CustomChatScreen screen, boolean customMode) {
         this.chatReason = chatReason;
+        this.customMode = customMode;
         for (int i = 0; i < strings.size(); i += 2) {
-            entries.add(new DialogueRowEntry(npc, chatReason, strings.subList(i, Math.min(i + 2, strings.size())), i, screen));
+            entries.add(new DialogueRowEntry(npc, chatReason, strings.subList(i, Math.min(i + 2, strings.size())), i, screen, customMode));
         }
         if (strings.size() % 2 == 0) {
-            entries.add(new DialogueRowEntry(npc, chatReason, new ArrayList<>(), strings.size(), screen));
+            entries.add(new DialogueRowEntry(npc, chatReason, new ArrayList<>(), strings.size(), screen, customMode));
         }
-        openWidget = new OpenWidget(0, 0, 10, 10, this, button -> {
-            open = !open;
-            screen.init();
-        });
+        if (customMode && strings.isEmpty()) {
+            entries.add(new DialogueRowEntry(npc, chatReason, new ArrayList<>(), 0, screen, true));
+        }
+
+        openWidget = new OpenWidget(0, 0, 10, 10, this, button -> open = !open);
     }
 
     @Override
@@ -68,11 +70,29 @@ public class ChatReasonEntryScrollContainer extends ElementListWidget.Entry<Chat
     }
 
     public boolean onClick(double mouseX, double mouseY) {
+        //click on arrow
         if (openWidget.isMouseOver(mouseX, mouseY)) {
-            openWidget.onClick(mouseX, mouseY);
+            openWidget.mouseClicked(mouseX, mouseY, 0);
             return true;
         }
+
+        if (!open || entries.isEmpty()) return false;
+
+        for (DialogueRowEntry row : entries) {
+            if (row.mouseClicked(mouseX, mouseY, 0)) {
+                return true;
+            }
+            for (AbstractDialogueEntry dialogue : row.dialogueEntryList) {
+                if (dialogue.mouseClicked(mouseX, mouseY, 0)) {
+                    return true;
+                }
+            }
+        }
         return false;
+    }
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        return this.onClick(mouseX, mouseY);
     }
 
     public void setOpen(boolean open) {

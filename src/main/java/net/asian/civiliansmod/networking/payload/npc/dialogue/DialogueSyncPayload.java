@@ -12,12 +12,15 @@ import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
+import net.minecraft.client.MinecraftClient;
+import net.asian.civiliansmod.gui.CustomChatScreen;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
@@ -32,10 +35,15 @@ public record DialogueSyncPayload(int npcId, String info) implements CustomPaylo
             DialogueSyncPayload::new
     );
 
-    public DialogueSyncPayload(int npcUuid, Map<String, Map<NpcChat.ChatReason, List<String>>> info) throws IOException {
+    public DialogueSyncPayload(int npcId,
+                               Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues,
+                               Map<NpcChat.ChatReason, List<String>> customDialogues) throws IOException {
         this(
-                npcUuid,
-                compress(new Gson().toJson(info))
+                npcId,
+                compress(new Gson().toJson(Map.of(
+                        "dialogues", dialogues,
+                        "custom", customDialogues
+                )))
         );
     }
 
@@ -46,17 +54,72 @@ public record DialogueSyncPayload(int npcId, String info) implements CustomPaylo
 
     public void handlePacket(ClientPlayNetworking.Context context) {
         if (!(context.player().getWorld() instanceof World world)) return;
-        if (!(world.getEntityById(this.npcId) instanceof NPCEntity)) {
-            return;
-        }
-        NPCEntity entity = (NPCEntity) world.getEntityById(npcId);
-        var type = new TypeToken<Map<String, Map<NpcChat.ChatReason, List<String>>>>() {}.getType();
+        if (!(world.getEntityById(this.npcId) instanceof NPCEntity entity)) return;
+
         try {
-            Map<String, Map<NpcChat.ChatReason, List<String>>> dialogueMap = new Gson().fromJson(decompress(info), type);
-            entity.getChatManager().setDialogue(dialogueMap);
-            entity.dialoguesReceived = true;
+            String json = decompress(info);
+            Gson gson = new Gson();
+
+            Map<String, Object> dialoguespack = gson.fromJson(json, new TypeToken<Map<String, Object>>() {}.getType());
+
+            Map<String, Map<NpcChat.ChatReason, List<String>>> dialogueMap = new HashMap<>();
+            Map<NpcChat.ChatReason, List<String>> customMap = new HashMap<>();
+
+
+            if (dialoguespack.containsKey("dialogues")) {
+                dialogueMap = gson.fromJson(gson.toJson(dialoguespack.get("dialogues")),
+                        new TypeToken<Map<String, Map<NpcChat.ChatReason, List<String>>>>() {}.getType()
+                );
+            }
+
+            if (dialoguespack.containsKey("custom")) {
+                customMap = gson.fromJson(gson.toJson(dialoguespack.get("custom")),
+                        new TypeToken<Map<NpcChat.ChatReason, List<String>>>() {}.getType()
+                );
+            }
+
+            if (customMap == null) {
+                customMap = new HashMap<>(); // safety fallback
+            }
+
+            String clientLanguage = MinecraftClient.getInstance().getLanguageManager().getLanguage();
+            Map<NpcChat.ChatReason, List<String>> dialoguesForLanguage = dialogueMap.get(clientLanguage);
+
+            //fallback to en_us
+            if (dialoguesForLanguage == null) {
+                dialoguesForLanguage = dialogueMap.get("en_us");
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues for language {}, falling back to en_us", clientLanguage);
+            }
+            //fallback if en_us not available (only if error in the gen files)
+            if (dialoguesForLanguage == null && !dialogueMap.isEmpty()) {
+                dialoguesForLanguage = dialogueMap.values().iterator().next();
+                CiviliansMod.LOGGER.warn("[CiviliansMod] No en_us dialogues, using first available language");
+            }
+
+            if (dialoguesForLanguage != null) {
+                Map<String, Map<NpcChat.ChatReason, List<String>>> correctLanguage = new HashMap<>();
+                correctLanguage.put(clientLanguage, dialoguesForLanguage);
+
+                entity.getChatManager().setDialogues(correctLanguage);
+                entity.getChatManager().setCustomDialogues(customMap);
+                entity.dialoguesReceived = true;
+                CiviliansMod.LOGGER.info("[CiviliansMod] Set {} dialogues and {} custom for NPC {}", dialoguesForLanguage.size(), customMap.size(), npcId);
+            } else {
+                CiviliansMod.LOGGER.error("[CiviliansMod] No dialogues available for NPC {}", npcId);
+            }
+
+            MinecraftClient client = MinecraftClient.getInstance();
+            client.execute(() -> {
+                // sync again later
+                client.execute(() -> {
+                    if (client.currentScreen instanceof CustomChatScreen screen) {
+                        CiviliansMod.LOGGER.info("[CiviliansMod] Refreshing CustomChatScreen after dialogue sync for NPC " + npcId);
+                        screen.fullInit();
+                    }
+                });
+            });
         } catch (Exception e) {
-            e.printStackTrace();
+            CiviliansMod.LOGGER.error("[CiviliansMod] Failed to handle DialogueSyncPayload for NPC {}", npcId, e);
         }
     }
 

@@ -7,7 +7,7 @@ public class DefaultChat {
     /**
      * method to get the default chat based on a language
      *
-     * @return a map of chat. First String being the language, secod map being the dialogues.
+     * @return a map of chat. First String being the language, second map being the dialogues.
      */
     public static Map<String, Map<NpcChat.ChatReason, List<String>>> getDefaultChat() {
         Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues = new HashMap<>();

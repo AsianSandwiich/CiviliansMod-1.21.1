@@ -9,15 +9,47 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ElementListWidget;
 import net.minecraft.util.math.MathHelper;
 
-public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScrollContainer> {
-    public GlobalChatScrollWidget(NPCEntity npc, MinecraftClient minecraftClient, int width, int height, int x, int y, int itemHeight, CustomChatScreen screen) {
-        super(minecraftClient, width, height, y, itemHeight);
-        npc.getChatManager().getTranslatedDialogues(minecraftClient.getLanguageManager().getLanguage()).forEach((chatReason, strings) -> {
-            this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen));
-        });
+import java.util.ArrayList;
 
+public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScrollContainer> {
+    NPCEntity npc;
+    CustomChatScreen screen;
+    boolean customMode;
+
+    public GlobalChatScrollWidget(NPCEntity npc, MinecraftClient minecraftClient, int width, int height, int x, int y, int itemHeight, CustomChatScreen screen, boolean customMode) {
+        super(minecraftClient, width, height, y, itemHeight);
+        this.npc = npc;
+        this.screen = screen;
+        this.customMode = customMode;
         this.setRenderHeader(false, 0);
         this.setPosition(x, y);
+        refreshChildren();
+    }
+
+    public boolean isCustomMode() {
+        return customMode;
+    }
+
+    public void refreshChildren() {
+        this.children().clear();
+        String language = MinecraftClient.getInstance().getLanguageManager().getLanguage();
+
+        var dialoguesMap = customMode
+                ? npc.getChatManager().getCustomDialogues()
+                : npc.getChatManager().getTranslatedDialogues(language);
+
+        dialoguesMap.forEach((chatReason, strings) -> {
+            // add allways
+            if (strings == null) strings = new ArrayList<>();
+            this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen, customMode));
+        });
+
+        // add placeholder
+        if (dialoguesMap.isEmpty() && customMode) {
+            for (NpcChat.ChatReason reason : NpcChat.ChatReason.values()) {
+                this.children().add(new ChatReasonEntryScrollContainer(npc, reason, new ArrayList<>(), screen, true));
+            }
+        }
     }
 
     @Override
@@ -25,14 +57,12 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
         return this.getX();
     }
 
-    @Override
     public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         this.enableScissor(context);
         this.renderList(context, mouseX, mouseY, delta);
         context.disableScissor();
         renderScrollBar(context);
     }
-
 
     protected void renderScrollBar(DrawContext context) {
         if (this.isScrollbarVisible()) {
@@ -82,6 +112,7 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
         int y = this.getY() - (int) this.getScrollAmount();
         for (int i = 0; i < entryCount; i++) {
             ChatReasonEntryScrollContainer entry = this.children().get(i);
+            // debug log: System.out.println("[CiviliansMod] Rendering entry " + i + " with height " + entry.getHeight());
             int entryHeight = entry.getHeight();
 
             if (y + entryHeight >= this.getY() && y <= this.getBottom()) {
@@ -98,16 +129,15 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
     }
 
     @Override
-    public void onClick(double mouseX, double mouseY) {
-        this.children().forEach(dialogueEntryScrollContainer -> {
-            if (dialogueEntryScrollContainer.onClick(mouseX, mouseY)) {
-                return;
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!this.isMouseOver(mouseX, mouseY)) return false;
+
+        for (ChatReasonEntryScrollContainer container : this.children()) {
+            if (container.mouseClicked(mouseX, mouseY, button)) {
+                return true;
             }
-            dialogueEntryScrollContainer.entries.forEach(entry -> {
-                entry.dialogueEntryList.forEach(dialogueEntry -> {
-                    dialogueEntry.onClick(mouseX, mouseY);
-                });
-            });
-        });
+        }
+
+        return false;
     }
 }
