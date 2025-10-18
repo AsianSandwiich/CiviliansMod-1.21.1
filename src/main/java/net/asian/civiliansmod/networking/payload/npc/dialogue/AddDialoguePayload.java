@@ -24,7 +24,7 @@ public record AddDialoguePayload(UUID npcUuid, String chatReason, String languag
             PacketCodecs.STRING, AddDialoguePayload::chatReason,
             PacketCodecs.STRING, AddDialoguePayload::language,
             PacketCodecs.STRING, AddDialoguePayload::dialogue,
-            PacketCodecs.BOOL, AddDialoguePayload::customMode,
+            PacketCodecs.BOOLEAN, AddDialoguePayload::customMode,
             AddDialoguePayload::new
     );
 

@@ -26,7 +26,7 @@ public record RemoveDialoguePayload(UUID npcUuid, String language, String chatRe
             PacketCodecs.STRING, RemoveDialoguePayload::language,
             PacketCodecs.STRING, RemoveDialoguePayload::chatReason,
             PacketCodecs.STRING, RemoveDialoguePayload::dialogue,
-            PacketCodecs.BOOL, RemoveDialoguePayload::customMode,
+            PacketCodecs.BOOLEAN, RemoveDialoguePayload::customMode,
             RemoveDialoguePayload::new
     );
 
