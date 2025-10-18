@@ -21,9 +21,8 @@ public class GlobalChatScrollWidget extends ElementListWidget<ChatReasonEntryScr
         this.npc = npc;
         this.screen = screen;
         this.customMode = customMode;
-        this.setRenderHeader(false, 0);
-        npc.getChatHandler().getTranslatedDialogues(minecraftClient.getLanguageManager().getLanguage()).forEach((chatReason, strings) -> {
-            this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen));
+        npc.getChatManager().getTranslatedDialogues(minecraftClient.getLanguageManager().getLanguage()).forEach((chatReason, strings) -> {
+            this.children().add(new ChatReasonEntryScrollContainer(npc, chatReason, strings, screen, customMode));
         });
 
         this.setPosition(x, y);

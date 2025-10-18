@@ -35,12 +35,6 @@ public class NpcChat {
         return languagechat.get(Random.create().nextInt(languagechat.size()));
     }
 
-
-    public static String getRandomChat(ChatReason reason, String language) {
-        List<String> chat = dialogues.get(reason);
-        if (chat == null || chat.isEmpty()) {
-            // fallback with null check
-            Map<String, Map<NpcChat.ChatReason, List<String>>> defaultChats = DefaultChat.getDefaultChat();
     private static String getInternalFallback(ChatReason reason, String language) {
         Map<String, Map<ChatReason, List<String>>> defaultChats = DefaultChat.getDefaultChat();
         Map<ChatReason, List<String>> languageChats = defaultChats.get(language);

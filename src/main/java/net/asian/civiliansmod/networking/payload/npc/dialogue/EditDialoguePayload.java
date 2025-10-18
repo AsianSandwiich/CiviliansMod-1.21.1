@@ -27,7 +27,7 @@ public record EditDialoguePayload(UUID npcUuid, String language, String chatReas
             PacketCodecs.STRING, EditDialoguePayload::chatReason,
             PacketCodecs.INTEGER, EditDialoguePayload::index,
             PacketCodecs.STRING, EditDialoguePayload::newDialogue,
-            PacketCodecs.BOOL, EditDialoguePayload::customMode,
+            PacketCodecs.BOOLEAN, EditDialoguePayload::customMode,
             EditDialoguePayload::new
     );
 

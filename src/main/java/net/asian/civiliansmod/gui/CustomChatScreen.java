@@ -72,7 +72,6 @@ public class CustomChatScreen extends AbstractConfigScreen {
 
         chatScrollWidget.children().forEach(container -> openList.add(container.getOpen()));
         chatScrollWidget.refreshChildren();
-        chatScrollWidget = new GlobalChatScrollWidget(npc, MinecraftClient.getInstance(), 236, 134, x - 114, y - 60, 10, this);
         chatScrollWidget.setScrollY(Math.min(offsetY, chatScrollWidget.getMaxScrollY()));
         chatScrollWidget.refreshScroll();
 
