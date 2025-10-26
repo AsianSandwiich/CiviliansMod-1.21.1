@@ -12,26 +12,22 @@ import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtIo;
+import net.minecraft.client.render.entity.EntityRenderer;
+import net.minecraft.client.render.entity.state.EntityRenderState;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.storage.NbtWriteView;
-import net.minecraft.storage.ReadView;
 import net.minecraft.text.Text;
 import net.minecraft.util.ErrorReporter;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Util;
-import net.minecraft.util.math.RotationAxis;
 import net.minecraft.world.World;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.Entity;
 import net.asian.civiliansmod.custom_skins.SkinFolderManager;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,6 +51,8 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
     private TextFieldWidget nameInputField;
     private ButtonWidget upslimButton;
     private ButtonWidget updefaultButton;
+    private float smoothHeadYaw = 0.0F;
+    private float smoothPitch = 0.0F;
 
     /**
      * used to know if the variant should be saved.
@@ -372,7 +370,6 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
             return -1; // Mouse click is entirely outside the vertical container area
         }
 
-
         int minIndex = Math.min(toRender.size() - this.startVariantIndex, 9);
 
         // Loop through all rendered variants
@@ -406,9 +403,6 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
         // Determine which skin/variant to preview
         int variantToRender = (selectedVariantIndex == -1) ? originalVariant : selectedVariantIndex;
 
-        // Create the preview NPC entity with the selected skin/variant
-        //TODO fix
-
         NPCEntity previewNPC;
         if (originalVariant == -1) {
             previewNPC = createBaseCenterPreviewNPC();
@@ -416,41 +410,60 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
             previewNPC = createCenterPreviewNPC(variantToRender);
         }
 
+        //Disable AI and Silent
+        previewNPC.setAiDisabled(true);
+        previewNPC.setSilent(true);
+
         // GUI size and position
         int guiWidth = 256;
         int guiHeight = 166;
         int guiX = (this.width - guiWidth) / 2;
         int guiY = (this.height - guiHeight) / 2;
 
-
-        int previewX = guiX + 36; // Position inside the GUI on the left side
-        int previewY = guiY + (guiHeight / 2) + 35;
+        //center preview position
+        int previewX = guiX + 36;
+        int previewY = guiY + (guiHeight / 2) + 45;
 
         // Calculate head rotation to follow the mouse
-        float deltaX = (float) (previewX - mouseX); // Invert the direction of movement on the X-axis
-        float deltaY = (mouseY - previewY) + 50.0F;
+        float deltaX = (float) (mouseX - previewX);
+        float deltaY = (float) (mouseY - previewY);
 
         // Set head yaw (horizontal rotation) and pitch (vertical rotation) for more subtle movements
-        float sensitivityFactor = 2.5F; // Higher value means more subtle movements
-        float headYaw = ((float) Math.atan2(deltaX, 50.0) * (180F / (float) Math.PI)) / sensitivityFactor;
-        float pitch = ((float) Math.atan2(deltaY, 50.0) * (180F / (float) Math.PI)) / sensitivityFactor;
+        float sensitivityFactor = 2.0F; // Higher value means more subtle movements
+        float targetHeadYaw = (-(float) Math.atan2(deltaX, 50.0) * (180F / (float) Math.PI)) / sensitivityFactor;
+        float targetPitch = ((float) Math.atan2(deltaY, 50.0) * (180F / (float) Math.PI)) / sensitivityFactor;
 
         // Clamp the pitch to prevent extreme angles (e.g., head flipping)
-        pitch = Math.max(-30.0F, Math.min(30.0F, pitch)); // Limit pitch to -30 to +30 degrees
+        targetHeadYaw = Math.max(-35.0F, Math.min(35.0F, targetHeadYaw));
+        targetPitch = Math.max(-25.0F, Math.min(25.0F, targetPitch));
+
+        //old pitch = Math.max(-30.0F, Math.min(30.0F, pitch)); // Limit pitch to -30 to +30 degrees
+
+        float smoothing = 0.15F;
+        final float DEADZONE = 0.8F;
+
+        if (Math.abs(targetHeadYaw - smoothHeadYaw) < 0.4F) targetHeadYaw = smoothHeadYaw;
+        if (Math.abs(targetPitch   - smoothPitch)   < 0.4F) targetPitch   = smoothPitch;
+
+        if (Math.abs(targetHeadYaw - smoothHeadYaw) > DEADZONE)
+            smoothHeadYaw += (targetHeadYaw - smoothHeadYaw) * 0.2F;
+
+        if (Math.abs(targetPitch - smoothPitch) > DEADZONE)
+            smoothPitch += (targetPitch - smoothPitch) * 0.2F;
+
+        if (smoothHeadYaw > 180.0F) smoothHeadYaw -= 360.0F;
+        if (smoothHeadYaw < -180.0F) smoothHeadYaw += 360.0F;
+
+        float bodyYaw = smoothHeadYaw * 0.1F;
+        previewNPC.setYaw(bodyYaw);
+        previewNPC.bodyYaw = bodyYaw;
 
         // Adjust body yaw to move less than the head
-        float bodyYaw = headYaw / 1.2F; // Less movement than the head
-
-        // Update the NPC entity's rotation attributes
-        previewNPC.setHeadYaw(headYaw); // Adjust headYaw for smoother turning behavior
-        previewNPC.setPitch(pitch);     // Vertical up-down movement adjustments
-
-        // Update body yaw (and previous yaw) directly for rendering
-        previewNPC.bodyYaw = bodyYaw;         // Set the current body yaw
-
+        previewNPC.setHeadYaw(smoothHeadYaw);
+        previewNPC.setPitch(smoothPitch);
 
         // Render the entity
-        renderEntity(previewX, previewY, 35, previewNPC, 180.0F);
+        renderEntity(context, previewX, previewY, 35, previewNPC);
     }
 
     @Override
@@ -549,7 +562,7 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
             return; // Skip rendering if out of bounds vertically
 
         // Render the entity preview
-        renderEntity(x + ENTITY_PREVIEW_SIZE, y + (ENTITY_SPACING / 2), ENTITY_PREVIEW_SIZE, previewNPC, 145.0F);
+        renderEntity(context, x + ENTITY_PREVIEW_SIZE, y + (ENTITY_SPACING / 2), ENTITY_PREVIEW_SIZE, previewNPC);
         // Check if the mouse is hovering over this variant
         if (mouseX >= adjustedX && mouseX <= adjustedX + entityWidth
                 && mouseY >= adjustedY && mouseY <= adjustedY + entityHeight) {
@@ -626,36 +639,49 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
         return previewNPC;
     }
 
-    private void renderEntity(int x, int y, int scale, Entity entity, float rotation) {
-        MatrixStack matrices = new MatrixStack();
-        EntityRenderDispatcher dispatcher = MinecraftClient.getInstance().getEntityRenderDispatcher();
+    @SuppressWarnings("unchecked")
+    private void renderEntity(DrawContext context, int x, int y, int scale, Entity entity) {
+        if (!(entity instanceof LivingEntity living)) return;
 
-        matrices.push();
+        MinecraftClient client = MinecraftClient.getInstance();
+        EntityRenderDispatcher dispatcher = client.getEntityRenderDispatcher();
 
-        // Translate into GUI space (position the entity)
-        matrices.translate(x, y, 50.0); // Depth is 50.0 to prevent clipping issues in GUI
+        EntityRenderer<LivingEntity, ? extends EntityRenderState> renderer =
+                (EntityRenderer<LivingEntity, ? extends EntityRenderState>) dispatcher.getRenderer(living);
 
-        // Scale the entity down (so it fits the GUI)
-        matrices.scale(scale, -scale, scale); // Note the negative Y scale to fix upside-down rendering
-
-        // Rotate to face the player, add custom rotation
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F + rotation));
-
-        // Render the entity with maximum brightness (to avoid dim lighting)
-        int lightOverride = 15728880; // Max brightness (sky +block light)
-
-        dispatcher.render(
-                entity,
-                0.0,// Y position in world space
-                0.0, // Z position in world space
-                0.0F, // No head yaw
-                1.0F, // Partial tick (unused in GUI)
-                matrices,
-                MinecraftClient.getInstance().getBufferBuilders().getEntityVertexConsumers(),
-                lightOverride // Ensure maximum brightness for rendering
-        );
-
-        matrices.pop();
+        boolean isPreview = (scale > 30); // Center-Preview higher (~35), varianten are lower (~25)
+        renderCaptured(renderer, living, context, x, y, scale, client, isPreview);
     }
 
+
+    private <S extends EntityRenderState> void renderCaptured(
+        EntityRenderer<LivingEntity, S> renderer,
+        LivingEntity living,
+        DrawContext context,
+        int x, int y, int scale,
+        MinecraftClient client,
+        boolean isPreview) {
+
+        S renderState = renderer.createRenderState();
+        renderer.updateRenderState(living, renderState, client.getRenderTickCounter().getTickProgress(false));
+
+        //rotation fix
+        Vector3f translation = new Vector3f(0f, 0f, 0f);
+        Quaternionf rotation = new Quaternionf();
+
+        //need to rotate 180° and Y + 15°
+        if (isPreview) {
+            rotation.rotateZ((float) Math.toRadians(180f))
+                    .rotateY((float) Math.toRadians(195f))
+                    .rotateX((float) Math.toRadians(-5f));
+        } else {
+            rotation.rotateZ((float) Math.toRadians(180f))
+                    .rotateY((float) Math.toRadians(165f))
+                    .rotateX((float) Math.toRadians(7f));
+        }
+        Quaternionf cameraAngle = new Quaternionf().rotateX((float) Math.toRadians(15f));
+
+        context.addEntity(renderState, scale, translation, rotation, cameraAngle,
+                x - scale, y - (int)(scale * 2.5f), x + scale, y + (int)(scale * 2.5f));
+    }
 }
