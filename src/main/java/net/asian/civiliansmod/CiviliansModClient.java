@@ -31,6 +31,24 @@ public class CiviliansModClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        // flashback compat
+        try {
+            // is flashback loaded?
+            Class<?> flashbackClass = Class.forName("com.moulberry.flashback.Flashback");
+            Object result = flashbackClass.getMethod("isInReplay").invoke(null);
+
+            if (result instanceof Boolean && (Boolean) result) {
+                CiviliansMod.LOGGER.info("[CiviliansMod] Flashback replay detected — initializing skins manually.");
+                FolderUtil.init();
+                SkinFolderManager.register();
+                NPCUtil.refreshTextures();
+            }
+        } catch (ClassNotFoundException e) {
+            // flashback is not given
+        } catch (Throwable t) {
+            CiviliansMod.LOGGER.warn("[CiviliansMod] Could not check Flashback replay state safely", t);
+        }
+
         SkinFolderManager.register();
 
         EntityRendererRegistry.register(ModEntities.NPC_ENTITY, NPCRenderer::new);
