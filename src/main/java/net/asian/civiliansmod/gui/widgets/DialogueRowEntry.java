@@ -39,14 +39,21 @@ public class DialogueRowEntry extends ElementListWidget.Entry<DialogueRowEntry> 
 
     @Override
     public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-        int i = 0;
+
+        int offsetX = 0;
+
         for (AbstractDialogueEntry entry : dialogueEntryList) {
-            entry.setX(x + i);
-            entry.setY(y);
-            entry.render(context, x + i, y, mouseX, mouseY, entry.isMouseOver(mouseX, mouseY), tickDelta);
-            i += 117;
+            int entryX = x + offsetX;
+            int entryY = y;
+
+            entry.setX(entryX);
+            entry.setY(entryY);
+
+            entry.render(context, entryX, entryY, mouseX, mouseY, entry.isMouseOver(mouseX, mouseY), tickDelta);
+            offsetX += 117;
         }
     }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         for (AbstractDialogueEntry entry : dialogueEntryList) {

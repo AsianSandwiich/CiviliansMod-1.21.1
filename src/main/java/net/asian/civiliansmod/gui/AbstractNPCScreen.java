@@ -435,7 +435,7 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
 
         // Clamp the pitch to prevent extreme angles (e.g., head flipping)
         targetHeadYaw = Math.max(-35.0F, Math.min(35.0F, targetHeadYaw));
-        targetPitch = Math.max(-25.0F, Math.min(25.0F, targetPitch));
+        targetPitch = Math.max(-30.0F, Math.min(30.0F, targetPitch));
 
         //old pitch = Math.max(-30.0F, Math.min(30.0F, pitch)); // Limit pitch to -30 to +30 degrees
 
