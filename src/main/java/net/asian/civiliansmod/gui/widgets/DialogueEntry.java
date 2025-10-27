@@ -53,22 +53,22 @@ public class DialogueEntry extends AbstractDialogueEntry {
 
     @Override
     public void render(DrawContext context, int x, int y, int mouseX, int mouseY, boolean hovered, float delta) {
+
+        //draw layour
         super.render(context, x, y, mouseX, mouseY, hovered, delta);
 
-        MatrixStack matrixStack = new MatrixStack();
-
-        deleteWidget.setX(x + 100);
+        //delete button
+        deleteWidget.setX(x + width - 12);
         deleteWidget.setY(y + 1);
-        float scale = 0.5f;
 
-        int maxWidth = (int) ((96) / scale);
+        //get text
+        MinecraftClient client = MinecraftClient.getInstance();
+        int maxWidth = width - 16;
+        String textToDraw = client.textRenderer.trimToWidth(dialogue, maxWidth - client.textRenderer.getWidth("..."))
+                + (client.textRenderer.getWidth(dialogue) > maxWidth ? "..." : "");
 
-        String textToDraw = MinecraftClient.getInstance().textRenderer.trimToWidth(dialogue, maxWidth - MinecraftClient.getInstance().textRenderer.getWidth("...")) + (MinecraftClient.getInstance().textRenderer.getWidth(dialogue) > maxWidth ? "..." : "");
-
-        matrixStack.push();
-        matrixStack.scale(scale, scale, 1.0F);
-        context.drawText(MinecraftClient.getInstance().textRenderer, textToDraw, (int) ((x + 3) / scale), (int) ((y + 4) / scale), 0xFFFFFF, true);
-        matrixStack.pop();
+        //draw dialouge
+        context.drawTextWithShadow(client.textRenderer, textToDraw, x + 4, y + 3, 0xFFFFFFFF);
 
         deleteWidget.render(context, mouseX, mouseY, delta);
     }

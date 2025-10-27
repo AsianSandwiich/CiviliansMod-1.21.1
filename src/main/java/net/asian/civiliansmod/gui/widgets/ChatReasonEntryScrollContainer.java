@@ -1,17 +1,20 @@
 package net.asian.civiliansmod.gui.widgets;
 
+import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.chat.NpcChat;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.gui.CustomChatScreen;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.widget.ElementListWidget;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
+import org.joml.Matrix3x2f;
+import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,15 +55,25 @@ public class ChatReasonEntryScrollContainer extends ElementListWidget.Entry<Chat
 
     @Override
     public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+
+        MinecraftClient client = MinecraftClient.getInstance();
+
+        //background first
+        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, Identifier.ofVanilla("widget/button"), x, y, 145, 13, ColorHelper.fromFloats(1.0f, 0.5f, 0.5f, 1.0f));
+
+        //arrow
         openWidget.setX(x + 1);
         openWidget.setY(y);
-        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, Identifier.ofVanilla("widget/button"), x, y, 145, 13, ColorHelper.fromFloats(1.0f, 0.5f, 0.5f, 1.0f));
         openWidget.render(context, mouseX, mouseY, tickDelta);
-        context.drawText(MinecraftClient.getInstance().textRenderer, chatReason.getName(), x + 11, y + 2, 0xFFFFFF, true);
+
+        //dialogue up also with Pipelines
+        context.drawTextWithShadow(client.textRenderer, String.valueOf(chatReason.getName()), x + 15, y + 3, 0xFFFFFFFF);
+
+        //entrys
         if (open) {
             int i = 15;
             for (DialogueRowEntry entry : entries) {
-                entry.render(context, 0, y + i, x, 110, 12, mouseX, mouseY, hovered, tickDelta);
+                entry.render(context, index, y + i, x, 110, 12, mouseX, mouseY, hovered, tickDelta);
                 i += 15;
             }
         }
