@@ -1,30 +1,37 @@
 package net.asian.civiliansmod.networking.payload.npc.dialogue;
 
-import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.chat.NpcChat;
 import net.asian.civiliansmod.entity.NPCEntity;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.entity.Entity;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.server.world.ServerWorld;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Uuids;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
-public record RemoveDialoguePayload(UUID npcUuid, String language, String chatReason,
-                                    String dialogue) implements CustomPayload {
-    public static final CustomPayload.Id<RemoveDialoguePayload> ID = new CustomPayload.Id<>(Identifier.of(CiviliansMod.MOD_ID, "npc_dialogue_remove"));
-
-    public static final PacketCodec<RegistryByteBuf, RemoveDialoguePayload> CODEC = PacketCodec.tuple(
+public record RemoveDialoguePayload(
+        UUID npcUuid,
+        String language,
+        String reason,
+        String dialogue,
+        boolean customMode
+) implements CustomPayload {
+    
+    public static final CustomPayload.Id<RemoveDialoguePayload> ID = 
+            new CustomPayload.Id<>(Identifier.of("civiliansmod", "remove_dialogue"));
+    
+    public static final PacketCodec<PacketByteBuf, RemoveDialoguePayload> CODEC = PacketCodec.tuple(
             Uuids.PACKET_CODEC, RemoveDialoguePayload::npcUuid,
             PacketCodecs.STRING, RemoveDialoguePayload::language,
-            PacketCodecs.STRING, RemoveDialoguePayload::chatReason,
+            PacketCodecs.STRING, RemoveDialoguePayload::reason,
             PacketCodecs.STRING, RemoveDialoguePayload::dialogue,
+            PacketCodecs.BOOL, RemoveDialoguePayload::customMode,
             RemoveDialoguePayload::new
     );
 
@@ -33,10 +40,26 @@ public record RemoveDialoguePayload(UUID npcUuid, String language, String chatRe
         return ID;
     }
 
-    public void handlePacket(ServerPlayNetworking.Context context) {
-        if (!(context.player().getWorld() instanceof ServerWorld world)) return;
-        if (!(world.getEntity(this.npcUuid) instanceof NPCEntity entity)) return;
-        entity.getChatManager().getDialogues().computeIfAbsent(language, (i) -> new HashMap<>()).computeIfAbsent(NpcChat.ChatReason.valueOf(chatReason), (o) -> new ArrayList<>()).remove(dialogue);
-        entity.getChatManager().markDialoguesDirty(context.player().getUuid());
+    public void handle(ServerPlayerEntity player) {
+        Entity entity = player.getServerWorld().getEntity(this.npcUuid);
+        if (entity instanceof NPCEntity npc) {
+            NpcChat.ChatReason chatReason = NpcChat.ChatReason.fromString(this.reason);
+            
+            if (this.customMode) {
+                // Remove from custom dialogues
+                List<String> dialogues = npc.getChatManager()
+                        .getCustomDialogues()
+                        .computeIfAbsent(chatReason, (o) -> new ArrayList<>());
+                dialogues.remove(this.dialogue);
+            } else {
+                // Remove from language dialogues
+                List<String> dialogues = npc.getChatManager()
+                        .getTranslatedDialogues(this.language)
+                        .computeIfAbsent(chatReason, (o) -> new ArrayList<>());
+                dialogues.remove(this.dialogue);
+            }
+            
+            npc.getChatManager().markDialoguesDirty(player.getUuid());
+        }
     }
 }

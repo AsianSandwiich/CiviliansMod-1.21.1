@@ -1,44 +1,56 @@
 package net.asian.civiliansmod.networking;
 
-import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.entity.NPCEntity;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.entity.Entity;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Uuids;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
 
 import java.util.UUID;
 
-public record NPCDataPayload(UUID entityUuid, String customName, boolean isPaused, boolean isFollowing) implements CustomPayload {
-    public static final CustomPayload.Id<NPCDataPayload> ID = new CustomPayload.Id<>(Identifier.of(CiviliansMod.MOD_ID, "npc_data"));
-
-    // Updated codec with isFollowing field
-    public static final PacketCodec<RegistryByteBuf, NPCDataPayload> CODEC = PacketCodec.tuple(
-            Uuids.PACKET_CODEC, NPCDataPayload::entityUuid,
-            PacketCodecs.STRING, NPCDataPayload::customName,
-            PacketCodecs.BOOLEAN, NPCDataPayload::isPaused, // Encodes/decodes the 'isPaused' state
-            PacketCodecs.BOOLEAN, NPCDataPayload::isFollowing, // Encodes/decodes the 'isFollowing' state
+public record NPCDataPayload(
+        UUID npcUuid,
+        String name,
+        boolean paused,
+        boolean following,
+        boolean battleBuddy,
+        float wanderRadius
+) implements CustomPayload {
+    
+    public static final CustomPayload.Id<NPCDataPayload> ID = 
+            new CustomPayload.Id<>(Identifier.of("civiliansmod", "npc_data"));
+    
+    public static final PacketCodec<PacketByteBuf, NPCDataPayload> CODEC = PacketCodec.tuple(
+            Uuids.PACKET_CODEC, NPCDataPayload::npcUuid,
+            PacketCodecs.STRING, NPCDataPayload::name,
+            PacketCodecs.BOOL, NPCDataPayload::paused,
+            PacketCodecs.BOOL, NPCDataPayload::following,
+            PacketCodecs.BOOL, NPCDataPayload::battleBuddy,
+            PacketCodecs.FLOAT, NPCDataPayload::wanderRadius,
             NPCDataPayload::new
     );
 
     @Override
-    public CustomPayload.Id<? extends CustomPayload> getId() {
+    public Id<? extends CustomPayload> getId() {
         return ID;
     }
 
-
-
-    public void handlePacket(ServerPlayNetworking.Context context) {
-        if (!(context.player().getWorld() instanceof ServerWorld world)) return;
-        if (!(world.getEntity(this.entityUuid) instanceof NPCEntity entity)) return;
-
-        entity.setCustomName(Text.of(this.customName));
-        entity.setPaused(this.isPaused); // Update the entity's paused state
-        entity.setFollowing(this.isFollowing);
+    public void handle(ServerPlayerEntity player) {
+        Entity entity = player.getServerWorld().getEntity(this.npcUuid);
+        if (entity instanceof NPCEntity npc) {
+            npc.setCustomName(Text.literal(this.name));
+            npc.setPaused(this.paused);
+            npc.setFollowing(this.following);
+            npc.setBattleBuddy(this.battleBuddy);
+            if (this.battleBuddy) {
+                npc.setOwner(player);
+            }
+            npc.setWanderRadius(this.wanderRadius);
+        }
     }
 }
