@@ -1,7 +1,9 @@
 package net.asian.civiliansmod.gui.widgets;
 
+import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.chat.NpcChat;
 import net.asian.civiliansmod.entity.NPCEntity;
+import net.asian.civiliansmod.gui.AddDialogueScreen;
 import net.asian.civiliansmod.gui.ConfirmScreen;
 import net.asian.civiliansmod.gui.CustomChatScreen;
 import net.asian.civiliansmod.gui.EditDialogueScreen;
@@ -10,6 +12,8 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.MultilineText;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.util.Identifier;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 
