@@ -1,5 +1,6 @@
 package net.asian.civiliansmod.entity;
 
+import net.asian.civiliansmod.CiviliansMod;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.asian.civiliansmod.CiviliansMod;
