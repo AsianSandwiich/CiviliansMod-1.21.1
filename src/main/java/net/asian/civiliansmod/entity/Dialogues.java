@@ -27,11 +27,21 @@ class Dialogue {
 
     public static record LanguageDialogue(Map<NpcChat.ChatReason, ChatReasonDialogue> languageDialogue) {
 
-        public static final Codec<LanguageDialogue> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                Codec.unboundedMap(NpcChat.ChatReason.CODEC, ChatReasonDialogue.CODEC)
-                        .fieldOf("language_dialogues")
-                        .forGetter(LanguageDialogue::languageDialogue)
-        ).apply(instance, LanguageDialogue::new));
+        public static final Codec<LanguageDialogue> CODEC = Codec.withAlternative(
+                // new key
+                RecordCodecBuilder.create(instance -> instance.group(
+                        Codec.unboundedMap(NpcChat.ChatReason.CODEC, ChatReasonDialogue.CODEC)
+                                .fieldOf("language_dialogues")
+                                .forGetter(LanguageDialogue::languageDialogue)
+                ).apply(instance, LanguageDialogue::new)),
+
+                // old key, old dialogue
+                RecordCodecBuilder.create(instance -> instance.group(
+                        Codec.unboundedMap(NpcChat.ChatReason.CODEC, ChatReasonDialogue.CODEC)
+                                .fieldOf("languague_dialogues")
+                                .forGetter(LanguageDialogue::languageDialogue)
+                ).apply(instance, LanguageDialogue::new))
+        );
 
         public static LanguageDialogue fromMap(Map<NpcChat.ChatReason, List<String>> input) {
             Map<NpcChat.ChatReason, ChatReasonDialogue> map = new HashMap<>();
