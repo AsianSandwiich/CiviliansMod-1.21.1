@@ -86,20 +86,6 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
         this.stay = npc.isPaused();
     }
 
-    public AbstractNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex, boolean follow, boolean stay) {
-        super(npc, Text.literal("Change NPC Variant"));
-        this.npc = npc;
-        this.selectedVariant = selected;
-        toRender = getSkinsToRender();
-        this.selectedVariantIndex = selectedVariantIndex;
-        this.originalVariant = NPCUtil.getSkins().indexOf(npc.getSkinManager().getIdSkin());
-        this.defaultSkin = defaultSkin;
-        this.follow = follow;
-        this.stay = stay;
-        this.battleBuddy = npc.isBattleBuddy();
-        this.wanderRadius = npc.getWanderRadius();
-    }
-
     protected abstract List<Integer> getSkinsToRender();
 
 
@@ -198,8 +184,6 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
         int containerHeight = 166;
         int containerX = (this.width - containerWidth) / 2;
         int containerY = (this.height - containerHeight) / 2;
-
-        // ... existing tab buttons (Wide, Slim, Custom) ...
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Wide"),
                 button -> MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this.npc, this.selectedVariant, defaultSkin, selectedVariantIndex, follow, stay))
@@ -736,5 +720,24 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
 
         context.addEntity(renderState, scale, translation, rotation, cameraAngle,
                 x - scale, y - (int)(scale * 2.5f), x + scale, y + (int)(scale * 2.5f));
+    }
+    public AbstractNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex,
+                             boolean follow, boolean stay, boolean battleBuddy, float wanderRadius) {
+        super(npc, Text.literal("Change NPC Variant"));
+        this.npc = npc;
+        this.selectedVariant = selected;
+        toRender = getSkinsToRender();
+        this.selectedVariantIndex = selectedVariantIndex;
+        this.originalVariant = NPCUtil.getSkins().indexOf(npc.getSkinManager().getIdSkin());
+        this.defaultSkin = defaultSkin;
+        this.follow = follow;
+        this.stay = stay;
+        this.battleBuddy = battleBuddy;
+        this.wanderRadius = wanderRadius;
+    }
+    public AbstractNPCScreen(NPCEntity npc, int selected, int defaultSkin, int selectedVariantIndex,
+                             boolean follow, boolean stay) {
+        this(npc, selected, defaultSkin, selectedVariantIndex, follow, stay,
+                npc.isBattleBuddy(), npc.getWanderRadius());
     }
 }
