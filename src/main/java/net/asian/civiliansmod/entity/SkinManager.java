@@ -100,4 +100,7 @@ public class SkinManager {
     public boolean isSlimModel() {
         return slim;
     }
+    public boolean isDefaultSkin() {
+        return defaultSkin;
+    }
 }

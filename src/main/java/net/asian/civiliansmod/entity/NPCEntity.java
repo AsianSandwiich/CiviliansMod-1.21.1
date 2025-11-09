@@ -324,4 +324,85 @@ public class NPCEntity extends PathAwareEntity {
             sent.add(playerId);
         }
     }
+
+    @Override
+    protected ActionResult interactMob(PlayerEntity player, Hand hand) {
+        CiviliansMod.LOGGER.info("[CiviliansMod] NPC interacted: {}", this.getId());
+
+        if (hand != Hand.MAIN_HAND) return ActionResult.PASS;
+
+        ItemStack heldItem = player.getStackInHand(hand);
+        if (heldItem.isOf(Items.LEAD) && !this.hasPassengers()) {
+            if (!this.getWorld().isClient()) {
+                if (this.canBeLeashedBy(player)) {
+                    this.attachLeash(player, true);
+                    return ActionResult.SUCCESS;
+                }
+            }
+        }
+
+        if (player.isSneaking()) {
+            if (!this.getWorld().isClient()) {
+                this.getNavigation().stop();
+
+                double dx = player.getX() - this.getX();
+                double dz = player.getZ() - this.getZ();
+                this.lookAtPlayerTicks = 60;
+
+                if (player instanceof ServerPlayerEntity serverPlayer && !hasSentTo(player.getUuid())) {
+                    markSentTo(player.getUuid());
+                    OpenScreenDialoguesPayload payload =
+                            new OpenScreenDialoguesPayload(this.getId(), this.getChatManager().getDialogues());
+                    ServerPlayNetworking.send(serverPlayer, payload);
+                    CiviliansMod.LOGGER.info("[CiviliansMod] Sent dialogues for NPC {}", this.getId());
+                }
+                return ActionResult.SUCCESS;
+            } else {
+                if (this.dialoguesReceived) {
+                    CiviliansMod.LOGGER.info("[CiviliansMod] Opening GUI for NPC {}", this.getId());
+                    openCustomNPCScreen();
+                } else {
+                    CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues yet for NPC {}", this.getId());
+                }
+                return ActionResult.SUCCESS;
+            }
+        } else {
+            if (!this.getWorld().isClient()) {
+                this.getNavigation().stop();
+                Text nameText = this.getCustomName();
+                String npcName = nameText != null ? nameText.getString() : "NPC";
+                String dialogue = getChatManager().getRandomChat(
+                        CiviliansMod.playerLanguages.get(player.getUuid()),
+                        net.asian.civiliansmod.chat.NpcChat.ChatReason.INTERACT);
+                player.sendMessage(Text.literal(npcName + ": " + dialogue), true);
+            }
+            return ActionResult.SUCCESS;
+        }
+    }
+
+    @Environment(EnvType.CLIENT)
+    public void openCustomNPCScreen() {
+        SkinManager skinManager = getSkinManager();
+
+        if (skinManager == null) return;
+
+        // default skin
+        if (skinManager.isSlim() && skinManager.isDefaultSkin()) {
+            MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this));
+        } else if (skinManager.isDefaultSkin()) {
+            MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this));
+        } else {
+            // Custom skin
+            MinecraftClient.getInstance().setScreen(new CustomNPCScreen(this));
+        }
+    }
+
+    @Override
+    public Vec3d getLeashOffset() {
+        return new Vec3d(0.0, 0.9, 0.0);
+    }
+
+    public boolean canBeLeashedBy(PlayerEntity player) {
+        return !this.isLeashed() && !player.isSneaking();
+    }
 }
