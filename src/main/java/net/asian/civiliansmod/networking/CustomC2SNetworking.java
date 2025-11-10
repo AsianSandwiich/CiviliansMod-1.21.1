@@ -24,6 +24,4 @@ public class CustomC2SNetworking {
     public static void intialize() {
     }
 
-
-
 }

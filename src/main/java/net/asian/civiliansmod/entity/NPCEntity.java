@@ -57,6 +57,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
+import net.minecraft.util.Uuids;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 
@@ -71,18 +72,18 @@ public class NPCEntity extends PathAwareEntity {
     private static final TrackedData<Boolean> IS_PAUSED = DataTracker.registerData(NPCEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private int regenerationCooldown = 0;
     private static final TrackedData<Boolean> IS_FOLLOWING = DataTracker.registerData(NPCEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-    
+
     // NEW: Battle Buddy Mode
     private static final TrackedData<Boolean> IS_BATTLE_BUDDY = DataTracker.registerData(NPCEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private float originalMaxHealth = 20.0F;
     private PlayerEntity owner = null;
-    
+
     // NEW: Wander Radius
     private static final TrackedData<Float> WANDER_RADIUS = DataTracker.registerData(NPCEntity.class, TrackedDataHandlerRegistry.FLOAT);
-    
+
     // NEW: Trade Preset
     private static final TrackedData<String> TRADE_PRESET = DataTracker.registerData(NPCEntity.class, TrackedDataHandlerRegistry.STRING);
-    
+
     int updateDialoguesTicks = 0;
 
     Set<UUID> sent;
@@ -93,9 +94,11 @@ public class NPCEntity extends PathAwareEntity {
     public NameManager getNameManager() {
         return nameManager;
     }
+
     public SkinManager getSkinManager() {
         return skinManager;
     }
+
     public ChatManager getChatManager() { return chatManager; }
 
     NameManager nameManager = new NameManager(this);
@@ -115,13 +118,13 @@ public class NPCEntity extends PathAwareEntity {
 
     @Override
     public Packet<ClientPlayPacketListener> createSpawnPacket(EntityTrackerEntry entityTrackerEntry) {
-        if (this.skinManager.skinByteArray == null) {
+        if (this.skinManager.getSkinByteArray() == null) {
             for (ServerPlayerEntity player : Objects.requireNonNull(this.getWorld().getServer()).getPlayerManager().getPlayerList()) {
-                ServerPlayNetworking.send(player, new SyncSkinPayload(this.getId(), this.skinManager.baseVariant));
+                ServerPlayNetworking.send(player, new SyncSkinPayload(this.getId(), this.skinManager.getBaseVariant()));
             }
         } else {
             for (ServerPlayerEntity player : Objects.requireNonNull(this.getWorld().getServer()).getPlayerManager().getPlayerList()) {
-                ServerPlayNetworking.send(player, new ClientNpcSkinPayload(this.getId(), this.skinManager.slim, this.skinManager.skinByteArray));
+                ServerPlayNetworking.send(player, new ClientNpcSkinPayload(this.getId(), this.skinManager.isSlimModel(), this.skinManager.getSkinByteArray()));
             }
         }
         return super.createSpawnPacket(entityTrackerEntry);
@@ -217,6 +220,7 @@ public class NPCEntity extends PathAwareEntity {
     public void setPaused(boolean paused) {
         this.dataTracker.set(IS_PAUSED, paused);
     }
+
     @Override
     protected void writeCustomData(WriteView writeView) {
         super.writeCustomData(writeView);
@@ -226,12 +230,11 @@ public class NPCEntity extends PathAwareEntity {
         writeView.putBoolean("IsBattleBuddy", this.isBattleBuddy());
         writeView.putFloat("WanderRadius", this.getWanderRadius());
         writeView.putString("TradePreset", this.getTradePreset());
-        writeView.put("dialogues", Dialogues.CODEC, Dialogues.fromMap(chatManager.getDialogues()));
+        writeView.put("dialogues", Dialogue.Dialogues.CODEC, Dialogue.Dialogues.fromMap(chatManager.getDialogues()));
         this.skinManager.writeView(writeView);
-        
-        // Save owner if exists
+
         if (this.owner != null) {
-            writeView.putUuid("OwnerUUID", this.owner.getUuid());
+            writeView.put("OwnerUUID", Uuids.CODEC, this.owner.getUuid());
         }
     }
 
@@ -246,15 +249,12 @@ public class NPCEntity extends PathAwareEntity {
 
         this.chatManager.setFromReadView(readView);
         this.skinManager.readNbt(readView);
-        
-        // Load owner if exists
-        if (readView.contains("OwnerUUID")) {
-            UUID ownerUuid = readView.getUuid("OwnerUUID");
-            if (this.getWorld() != null && !this.getWorld().isClient) {
-                PlayerEntity player = this.getWorld().getPlayerByUuid(ownerUuid);
-                if (player != null) {
-                    this.owner = player;
-                }
+
+        UUID ownerUuid = readView.read("OwnerUUID", Uuids.CODEC).orElse(null);
+        if (ownerUuid != null && this.getWorld() != null && !this.getWorld().isClient) {
+            PlayerEntity player = this.getWorld().getPlayerByUuid(ownerUuid);
+            if (player != null) {
+                this.owner = player;
             }
         }
     }
@@ -269,11 +269,11 @@ public class NPCEntity extends PathAwareEntity {
     @Override
     protected void initGoals() {
         super.initGoals();
-        
+
         // Battle Buddy goals (highest priority when active)
         this.goalSelector.add(1, new NPCDefendOwnerGoal(this));
         this.goalSelector.add(2, new NPCAttackGoal(this, 1.0, false));
-        
+
         // Regular goals
         this.goalSelector.add(3, new WanderAroundFarGoal(this, 0.7) {
             @Override
@@ -284,28 +284,28 @@ public class NPCEntity extends PathAwareEntity {
                 }
                 return super.canStart();
             }
-            
+
             @Override
             protected Vec3d getWanderTarget() {
                 // Respect wander radius
                 float radius = getWanderRadius();
                 Vec3d currentPos = NPCEntity.this.getPos();
-                
+
                 // Get random position within radius
                 Random random = NPCEntity.this.getRandom();
                 double angle = random.nextDouble() * 2 * Math.PI;
                 double distance = random.nextDouble() * radius;
-                
+
                 double x = currentPos.x + Math.cos(angle) * distance;
                 double z = currentPos.z + Math.sin(angle) * distance;
-                
+
                 return new Vec3d(x, currentPos.y, z);
             }
         });
-        
+
         this.goalSelector.add(6, new CustomDoorGoal(this));
         this.goalSelector.add(4, new LookAroundGoal(this));
-        
+
         // Target selector for battle buddy
         this.targetSelector.add(1, new RevengeGoal(this) {
             @Override
@@ -314,3 +314,95 @@ public class NPCEntity extends PathAwareEntity {
             }
         });
     }
+
+    public boolean hasSentTo(UUID playerId) {
+        return sent != null && sent.contains(playerId);
+    }
+
+    public void markSentTo(UUID playerId) {
+        if (sent != null) {
+            sent.add(playerId);
+        }
+    }
+
+    @Override
+    protected ActionResult interactMob(PlayerEntity player, Hand hand) {
+        CiviliansMod.LOGGER.info("[CiviliansMod] NPC interacted: {}", this.getId());
+
+        if (hand != Hand.MAIN_HAND) return ActionResult.PASS;
+
+        ItemStack heldItem = player.getStackInHand(hand);
+        if (heldItem.isOf(Items.LEAD) && !this.hasPassengers()) {
+            if (!this.getWorld().isClient()) {
+                if (this.canBeLeashedBy(player)) {
+                    this.attachLeash(player, true);
+                    return ActionResult.SUCCESS;
+                }
+            }
+        }
+
+        if (player.isSneaking()) {
+            if (!this.getWorld().isClient()) {
+                this.getNavigation().stop();
+
+                double dx = player.getX() - this.getX();
+                double dz = player.getZ() - this.getZ();
+                this.lookAtPlayerTicks = 60;
+
+                if (player instanceof ServerPlayerEntity serverPlayer && !hasSentTo(player.getUuid())) {
+                    markSentTo(player.getUuid());
+                    OpenScreenDialoguesPayload payload =
+                            new OpenScreenDialoguesPayload(this.getId(), this.getChatManager().getDialogues());
+                    ServerPlayNetworking.send(serverPlayer, payload);
+                    CiviliansMod.LOGGER.info("[CiviliansMod] Sent dialogues for NPC {}", this.getId());
+                }
+                return ActionResult.SUCCESS;
+            } else {
+                if (this.dialoguesReceived) {
+                    CiviliansMod.LOGGER.info("[CiviliansMod] Opening GUI for NPC {}", this.getId());
+                    openCustomNPCScreen();
+                } else {
+                    CiviliansMod.LOGGER.warn("[CiviliansMod] No dialogues yet for NPC {}", this.getId());
+                }
+                return ActionResult.SUCCESS;
+            }
+        } else {
+            if (!this.getWorld().isClient()) {
+                this.getNavigation().stop();
+                Text nameText = this.getCustomName();
+                String npcName = nameText != null ? nameText.getString() : "NPC";
+                String dialogue = getChatManager().getRandomChat(
+                        CiviliansMod.playerLanguages.get(player.getUuid()),
+                        net.asian.civiliansmod.chat.NpcChat.ChatReason.INTERACT);
+                player.sendMessage(Text.literal(npcName + ": " + dialogue), true);
+            }
+            return ActionResult.SUCCESS;
+        }
+    }
+
+    @Environment(EnvType.CLIENT)
+    public void openCustomNPCScreen() {
+        SkinManager skinManager = getSkinManager();
+
+        if (skinManager == null) return;
+
+        // default skin
+        if (skinManager.isSlim() && skinManager.isDefaultSkin()) {
+            MinecraftClient.getInstance().setScreen(new SlimNPCScreen(this));
+        } else if (skinManager.isDefaultSkin()) {
+            MinecraftClient.getInstance().setScreen(new DefaultNPCScreen(this));
+        } else {
+            // Custom skin
+            MinecraftClient.getInstance().setScreen(new CustomNPCScreen(this));
+        }
+    }
+
+    @Override
+    public Vec3d getLeashOffset() {
+        return new Vec3d(0.0, 0.9, 0.0);
+    }
+
+    public boolean canBeLeashedBy(PlayerEntity player) {
+        return !this.isLeashed() && !player.isSneaking();
+    }
+}

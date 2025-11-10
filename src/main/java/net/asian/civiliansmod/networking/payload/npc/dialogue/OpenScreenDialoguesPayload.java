@@ -18,19 +18,19 @@ import net.minecraft.world.World;
 
 import java.util.*;
 
-public record OpenScreenDialoguesPayload(int npcId, String dialogue) implements CustomPayload {
-    public static final CustomPayload.Id<OpenScreenDialoguesPayload> ID = new CustomPayload.Id<>(Identifier.of(CiviliansMod.MOD_ID, "npc_dialogue_add"));
+public record OpenScreenDialoguesPayload(int npcId, String dialogues) implements CustomPayload {
+    public static final CustomPayload.Id<OpenScreenDialoguesPayload> ID = new CustomPayload.Id<>(Identifier.of(CiviliansMod.MOD_ID, "open_screen_dialogues"));
 
     public static final PacketCodec<RegistryByteBuf, OpenScreenDialoguesPayload> CODEC = PacketCodec.tuple(
             PacketCodecs.INTEGER, OpenScreenDialoguesPayload::npcId,
-            PacketCodecs.STRING, OpenScreenDialoguesPayload::dialogue,
+            PacketCodecs.STRING, OpenScreenDialoguesPayload::dialogues,
             OpenScreenDialoguesPayload::new
     );
 
-    public OpenScreenDialoguesPayload(int npcId, Map<String, Map<NpcChat.ChatReason, List<String>>> dialogue) {
+    public OpenScreenDialoguesPayload(int npcId, Map<String, Map<NpcChat.ChatReason, List<String>>> dialogues) {
         this(
                 npcId,
-                new Gson().toJson(dialogue)
+                new Gson().toJson(dialogues)
         );
     }
 
@@ -41,30 +41,27 @@ public record OpenScreenDialoguesPayload(int npcId, String dialogue) implements 
 
     public void handlePacket(ClientPlayNetworking.Context context) {
         if (!(context.player().getWorld() instanceof World world)) return;
-        if (!(world.getEntityById(this.npcId) instanceof NPCEntity)) {
-            Entity entity = world.getEntityById(this.npcId);
-            if (!(entity instanceof NPCEntity npc)) {
-                System.out.println(entity);
-                System.out.println("");
-
-                return;
-            }
-            var type = new TypeToken<Map<String, Map<NpcChat.ChatReason, List<String>>>>() {
-            }.getType();
-            Map<String, Map<NpcChat.ChatReason, List<String>>> dialogueMap = new Gson().fromJson(dialogue, type);
-
-            npc.getChatManager().setDialogues(dialogueMap);
-            npc.dialoguesReceived = true;
-            CiviliansMod.LOGGER.info("[CiviliansMod] Dialogues received for NPC " + npcId);
-            MinecraftClient.getInstance().execute(() -> {
-                if (MinecraftClient.getInstance().currentScreen instanceof CustomChatScreen screen) {
-                    CiviliansMod.LOGGER.info("[CiviliansMod] Initializing CustomChatScreen after dialogue sync for NPC {}", npcId);
-                    screen.fullInit(); // refresh entrys
-                } else {
-                    // not automatical open the screen
-                    CiviliansMod.LOGGER.info("[CiviliansMod] Dialogues received but CustomChatScreen not open yet for NPC {}", npcId);
-                }
-            });
+        Entity entity = world.getEntityById(this.npcId);
+        if (!(entity instanceof NPCEntity npc)) {
+            CiviliansMod.LOGGER.warn("[CiviliansMod] Entity with id {} is not an NPCEntity!", npcId);
+            return;
         }
+
+        var type = new TypeToken<Map<String, Map<NpcChat.ChatReason, List<String>>>>() {}.getType();
+        Map<String, Map<NpcChat.ChatReason, List<String>>> dialogueMap = new Gson().fromJson(dialogues, type);
+
+        npc.getChatManager().setDialogues(dialogueMap);
+        npc.dialoguesReceived = true;
+
+        CiviliansMod.LOGGER.info("[CiviliansMod] Dialogues received for NPC {}", npcId);
+
+        MinecraftClient.getInstance().execute(() -> {
+            if (MinecraftClient.getInstance().currentScreen instanceof CustomChatScreen screen) {
+                CiviliansMod.LOGGER.info("[CiviliansMod] Initializing CustomChatScreen after dialogue sync for NPC {}", npcId);
+                screen.fullInit(); // refresh entries
+            } else {
+                CiviliansMod.LOGGER.info("[CiviliansMod] Dialogues received but CustomChatScreen not open yet for NPC {}", npcId);
+            }
+        });
     }
 }
