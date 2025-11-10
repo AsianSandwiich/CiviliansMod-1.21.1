@@ -150,11 +150,11 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Render the default elements
-        super.render(context, mouseX, mouseY, delta);
-
         // Render the custom GUI container (Your GUI background)
         this.drawMainContainer(context);
+
+        // Render the default elements
+        super.render(context, mouseX, mouseY, delta);
 
         // Center text
         context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Civilian Customizer"), this.width / 2, 30, 0xFFFFFF);
@@ -172,12 +172,6 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
 
         this.upslimButton.visible = this instanceof CustomNPCScreen;
         this.updefaultButton.visible = this instanceof CustomNPCScreen;
-
-        for (var button : this.children()) {
-            if (button instanceof ButtonWidget) {
-                ((ButtonWidget) button).render(context, mouseX, mouseY, delta);
-            }
-        }
     }
 
 // Update the init() method - add these buttons after the follow button:
@@ -211,12 +205,12 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
 
         this.upslimButton = ButtonWidget.builder(Text.literal("↑Slim"), button ->
                         SkinFolderManager.openFolder(SkinFolderManager.NPCModel.SLIM))
-                .dimensions(containerX + 202, containerY + containerHeight - 37, 49, 20).build();
+                .dimensions(containerX + 202, containerY + containerHeight - 8, 49, 20).build();
         this.addDrawableChild(upslimButton);
 
         this.updefaultButton = ButtonWidget.builder(Text.literal("↑Wide"), button ->
                         SkinFolderManager.openFolder(SkinFolderManager.NPCModel.WIDE))
-                .dimensions(containerX + 202, containerY + containerHeight - 66, 49, 20).build();
+                .dimensions(containerX + 202, containerY + containerHeight +21, 49, 20).build();
         this.addDrawableChild(updefaultButton);
 
         String currentName = npc.getCustomName() != null ? npc.getCustomName().getString() : "";
@@ -263,19 +257,24 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
                                 npc.setOwner(MinecraftClient.getInstance().player);
                             }
                             button.setMessage(Text.literal(newState ? "Battle: On" : "Battle: Off"));
-                        }).dimensions(containerX + 148, containerY + containerHeight - 124, 49, 20)
+                            // Update slider visibility
+                            if (wanderSlider != null) {
+                                wanderSlider.visible = !npc.isPaused() && !npc.isFollowing() && !npc.isBattleBuddy();
+                            }
+                        }).dimensions(containerX + 202, containerY + containerHeight - 66, 49, 20)
                 .build();
         this.addDrawableChild(battleBuddyButton);
 
         // NEW: Wander Scale slider (only visible when Stay and Follow are OFF)
+        if (this.wanderRadius <= 0) this.wanderRadius = 10.0F;
         this.wanderSlider = new SliderWidget(
-                containerX + 148, containerY + containerHeight - 95, 49, 20,
+                containerX + 202, containerY + containerHeight - 37, 49, 20,
                 Text.literal("Range: " + (int)this.wanderRadius),
-                (this.wanderRadius - 1.0) / 63.0 // Normalize to 0-1 (range 1-64)
+                (this.wanderRadius - 1.0) / 63.0 // Normalize to 0-1
         ) {
             @Override
             protected void updateMessage() {
-                wanderRadius = (float)(this.value * 63.0 + 1.0); // Convert back to 1-64
+                wanderRadius = (float)(this.value * 63.0 + 1.0);
                 this.setMessage(Text.literal("Range: " + (int)wanderRadius));
             }
 
@@ -284,7 +283,8 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
                 npc.setWanderRadius(wanderRadius);
             }
         };
-        this.wanderSlider.visible = !npc.isPaused() && !npc.isFollowing();
+
+        this.wanderSlider.visible = !npc.isPaused() && !npc.isFollowing() && !npc.isBattleBuddy();
         this.addDrawableChild(this.wanderSlider);
 
         this.nameInputField.setText(currentName);
