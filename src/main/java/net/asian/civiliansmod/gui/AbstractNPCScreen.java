@@ -717,12 +717,12 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
         //need to rotate 180°
         if (isPreview) {
             rotation.rotateZ((float) Math.toRadians(180f))
-                    .rotateY((float) Math.toRadians(192.5f))
-                    .rotateX((float) Math.toRadians(-3.5f));
+                    .rotateY((float) Math.toRadians(192.5f));
+                    //.rotateX((float) Math.toRadians(-3.5f));
         } else {
             rotation.rotateZ((float) Math.toRadians(180f))
-                    .rotateY((float) Math.toRadians(165f))
-                    .rotateX((float) Math.toRadians(7f));
+                    .rotateY((float) Math.toRadians(165f));
+                    //.rotateX((float) Math.toRadians(7f));
         }
 
         Quaternionf cameraAngle = new Quaternionf().rotationX((float) Math.toRadians(18f));
