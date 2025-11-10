@@ -58,6 +58,7 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
     private ButtonWidget updefaultButton;
     private float smoothHeadYaw = 0.0F;
     private float smoothPitch = 0.0F;
+    private NPCEntity previewCenter;
 
     /**
      * used to know if the variant should be saved.
@@ -441,14 +442,15 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
 
 
     private void renderCenterPreview(DrawContext context, int mouseX, int mouseY) {
+        if (previewCenter == null) {
+            previewCenter = createBaseCenterPreviewNPC();
+        }
+        NPCEntity previewNPC = previewCenter;
+
         // Determine which skin/variant to preview
         int variantToRender = (selectedVariantIndex == -1) ? originalVariant : selectedVariantIndex;
-
-        NPCEntity previewNPC;
-        if (originalVariant == -1) {
-            previewNPC = createBaseCenterPreviewNPC();
-        } else {
-            previewNPC = createCenterPreviewNPC(variantToRender);
+        if (variantToRender >= 0) {
+            previewNPC.getSkinManager().setIdSkin(NPCUtil.getNPCTexture(variantToRender));
         }
 
         //Disable AI and Silent
