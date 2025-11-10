@@ -1,5 +1,6 @@
 package net.asian.civiliansmod.gui;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.asian.civiliansmod.CiviliansMod;
 import net.asian.civiliansmod.entity.NPCEntity;
 import net.asian.civiliansmod.networking.payload.npc.skin.ChangeBaseSkinPayload;
@@ -128,18 +129,21 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
         int containerX = (this.width - containerWidth) / 2;
         int containerY = (this.height - containerHeight) / 2;
 
+        int tintColor = 0xFFFFFFFF;
+
         // Draw the container texture (centered)
         context.drawTexture(
                 RenderPipelines.GUI_TEXTURED,   // Specify the render layer function
                 guiTexture,             // Texture Identifier
                 containerX,             // X position
                 containerY,             // Y position
-                0,                      // U coordinate of the texture
-                0,                      // V coordinate of the texture
+                0.0F,                      // U coordinate of the texture
+                0.0F,                      // V coordinate of the texture
                 containerWidth,         // Width of the region to draw
                 containerHeight,        // Height of the region to draw
                 containerWidth,         // Width of the texture
-                containerHeight         // Height of the texture
+                containerHeight,         // Height of the texture
+                tintColor
         );
     }
 
@@ -459,7 +463,7 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
 
         //center preview position
         int previewX = guiX + 36;
-        int previewY = guiY + (guiHeight / 2) + 45;
+        int previewY = guiY + (guiHeight / 2) + 34;
 
         // Calculate head rotation to follow the mouse
         float deltaX = (float) (mouseX - previewX);
@@ -474,28 +478,13 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
         targetHeadYaw = Math.max(-35.0F, Math.min(35.0F, targetHeadYaw));
         targetPitch = Math.max(-30.0F, Math.min(30.0F, targetPitch));
 
-        //old pitch = Math.max(-30.0F, Math.min(30.0F, pitch)); // Limit pitch to -30 to +30 degrees
-
-        float smoothing = 0.15F;
-        final float DEADZONE = 0.8F;
-
-        if (Math.abs(targetHeadYaw - smoothHeadYaw) < 0.4F) targetHeadYaw = smoothHeadYaw;
-        if (Math.abs(targetPitch   - smoothPitch)   < 0.4F) targetPitch   = smoothPitch;
-
-        if (Math.abs(targetHeadYaw - smoothHeadYaw) > DEADZONE)
-            smoothHeadYaw += (targetHeadYaw - smoothHeadYaw) * 0.2F;
-
-        if (Math.abs(targetPitch - smoothPitch) > DEADZONE)
-            smoothPitch += (targetPitch - smoothPitch) * 0.2F;
-
-        if (smoothHeadYaw > 180.0F) smoothHeadYaw -= 360.0F;
-        if (smoothHeadYaw < -180.0F) smoothHeadYaw += 360.0F;
+        smoothHeadYaw += (targetHeadYaw - smoothHeadYaw) * 0.15F;
+        smoothPitch += (targetPitch - smoothPitch) * 0.15F;
 
         float bodyYaw = smoothHeadYaw * 0.1F;
+
         previewNPC.setYaw(bodyYaw);
         previewNPC.bodyYaw = bodyYaw;
-
-        // Adjust body yaw to move less than the head
         previewNPC.setHeadYaw(smoothHeadYaw);
         previewNPC.setPitch(smoothPitch);
 
@@ -575,6 +564,11 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
 
     private void renderVariantPreview(DrawContext context, int x, int y, int variantIndex, int mouseX, int mouseY) {
         NPCEntity previewNPC = createPreviewNPC(variantIndex);
+
+        previewNPC.setHeadYaw(0.0F);
+        previewNPC.setYaw(0.0F);
+        previewNPC.bodyYaw = 0.0F;
+        previewNPC.setPitch(0.0F);
 
         // Container dimensions
         int containerWidth = 256;
@@ -702,21 +696,34 @@ public abstract class AbstractNPCScreen extends AbstractConfigScreen {
         S renderState = renderer.createRenderState();
         renderer.updateRenderState(living, renderState, client.getRenderTickCounter().getTickProgress(false));
 
+        // only for CenterPreview
+        if (isPreview && renderState instanceof net.minecraft.client.render.entity.state.LivingEntityRenderState ls) {
+            // use Entity
+            float headYaw = living.headYaw;
+            float pitch = living.getPitch();
+            float bodyYaw = headYaw * 0.1F;
+
+            ls.bodyYaw = bodyYaw;
+            ls.relativeHeadYaw = headYaw - bodyYaw;
+            ls.pitch = pitch;
+        }
+
         //rotation fix
         Vector3f translation = new Vector3f(0f, 0f, 0f);
         Quaternionf rotation = new Quaternionf();
 
-        //need to rotate 180° and Y + 15°
+        //need to rotate 180°
         if (isPreview) {
             rotation.rotateZ((float) Math.toRadians(180f))
-                    .rotateY((float) Math.toRadians(195f))
-                    .rotateX((float) Math.toRadians(-5f));
+                    .rotateY((float) Math.toRadians(192.5f))
+                    .rotateX((float) Math.toRadians(-3.5f));
         } else {
             rotation.rotateZ((float) Math.toRadians(180f))
                     .rotateY((float) Math.toRadians(165f))
                     .rotateX((float) Math.toRadians(7f));
         }
-        Quaternionf cameraAngle = new Quaternionf().rotateX((float) Math.toRadians(15f));
+
+        Quaternionf cameraAngle = new Quaternionf().rotationX((float) Math.toRadians(18f));
 
         context.addEntity(renderState, scale, translation, rotation, cameraAngle,
                 x - scale, y - (int)(scale * 2.5f), x + scale, y + (int)(scale * 2.5f));
